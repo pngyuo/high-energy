@@ -13,7 +13,7 @@ TGraphErrors* drawConnectedPoints(TH1D* hist, Color_t color, Style_t markerStyle
     int count = 0; // 用于记录满足条件的点的数量
     for (int i = 1; i <= n; ++i) {
         double binCenter = hist->GetBinCenter(i);
-        if (binCenter < 3&&binCenter >0.25) { // 只保留 x < 3 的点
+        if (binCenter < 3) { // 只保留 x < 3 的点
             x[count] = binCenter;
             y[count] = hist->GetBinContent(i);
             ey[count] = hist->GetBinError(i);
@@ -127,8 +127,8 @@ label->DrawLatexNDC(0.05, 0.5, "dN/(dp_{T}dy)(GeV/c)^{-1}"); // 使用NDC坐标
 
 
 TString filenames[1] = {"hist_outputallFSI_liang.root"};
-    TString histname1 ="hPiCh_dPhi0";
-    TString filenames1= "Pi_To.root";
+    TString histname1 ="hPiCh_dPhi1";
+    TString filenames1= "Pi_Tr.root";
 
     std::vector<Color_t> colors = {kRed, kBlue, kMagenta};
     std::vector<Style_t> markerStyles = {20, 21, 22};
@@ -195,9 +195,9 @@ TString filenames[1] = {"hist_outputallFSI_liang.root"};
     //legend->AddEntry(marker4, "nohFSI", "lp");
     legend->Draw(); 
 
-  addText2(0.45, 0.8, "Toward");
+  addText2(0.41, 0.83, "Transverse");
   addText4(0.40, 0.24, "#pi^{+}+#pi^{-}");
   c1->SetLogy(); // 设置y轴为对数刻度
-  c1->SaveAs("Pi_ToPt.png");
+  c1->SaveAs("Pi_TrPt.png");
 
 }

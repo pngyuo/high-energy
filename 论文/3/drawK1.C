@@ -14,7 +14,7 @@ TGraphErrors* drawConnectedPoints(TH1D* hist, Color_t color, Style_t markerStyle
     int count = 0; // 用于记录满足条件的点的数量
     for (int i = 1; i <= n; ++i) {
         double binCenter = hist->GetBinCenter(i);
-        if (binCenter < 3&&binCenter >0.25) { // 只保留 x < 3 的点
+        if (binCenter < 3) { // 只保留 x < 3 的点
             x[count] = binCenter;
             y[count] = hist->GetBinContent(i);
             ey[count] = hist->GetBinError(i);
@@ -78,7 +78,7 @@ std::vector<TH1D*> getCentPtProjections(const TString& filename, const TString& 
     std::cout << "averageNT: " << averageNT << std::endl;
     std::vector<TH1D*> projections;
    double rtRanges[2] = {0,1.5};  // RT 的范围
-    double rtUpperRanges[2] = {1,5};  // RT 上限
+    double rtUpperRanges[2] = {0.5,5};  // RT 上限
   
    for (int i = 0; i < 2; i++) {
         // 将 RT 转换为 NT 的范围
@@ -137,7 +137,7 @@ void drawK1() {
       TCanvas *c1 = new TCanvas("c1", "c1", 1200, 800); // 调整画布尺寸为1200x800
     c1->SetTicks(1, 1); // 开启X/Y轴的双边刻度
     c1->SetMargin(0.17, 0.17, 0.18, 0.1); // 调整边距
-  TH2D *axisFrame = new TH2D("axisFrame", "; ; ", 100, 0, 3, 100, 0.05, 0.4);
+  TH2D *axisFrame = new TH2D("axisFrame", "; ; ", 100, 0, 3, 100, 0, 0.45);
   axisFrame->GetYaxis()->SetTickLength(0.02); // 调整刻度长度
   axisFrame->GetXaxis()->SetTickLength(0.02);
   axisFrame->GetXaxis()->SetLabelSize(0.045); // 将X轴标签字体大小调整为0.045
@@ -157,8 +157,8 @@ void drawK1() {
   label->DrawLatexNDC(0.05, 0.5, "#Kappa/#pi"); // 使用NDC坐标
 
   TString filenames= "hist_outputallFSI_liang.root";
-  TString histname1 = "hKCh_dPhi0";
-  TString histname2 = "hPiCh_dPhi0";
+  TString histname1 = "hKCh_dPhi1";
+  TString histname2 = "hPiCh_dPhi1";
 
   std::vector<Color_t> colors = {kBlack,kRed, kBlue, kMagenta};
   std::vector<Style_t> markerStyles = {20, 21, 22, 23};
@@ -207,7 +207,7 @@ void drawK1() {
   legend->Draw();
 
   addText(0.20, 0.73 ,"allFSI");
-  addText2(0.45, 0.8, "Toward");
+  addText2(0.41, 0.83, "Transverse");
 
-  c1->SaveAs("K_PI_To.png");
+  c1->SaveAs("1K_PI_Tr.png");
 }

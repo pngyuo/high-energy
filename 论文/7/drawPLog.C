@@ -196,8 +196,8 @@ void drawPLog(){
   TH2D *axisFrame = new TH2D("axisFrame", "; ; ", 100, 0, 3, 100, -0.01, 0.23);
   axisFrame->GetYaxis()->SetTickLength(0.02); // 调整刻度长度
   axisFrame->GetXaxis()->SetTickLength(0.02);
-  axisFrame->GetXaxis()->SetLabelSize(0.045); // 将X轴标签字体大小调整为0.045
-  axisFrame->GetYaxis()->SetLabelSize(0.045); // 将Y轴标签字体大小调整为0.045
+  axisFrame->GetXaxis()->SetLabelSize(0.06); // 将X轴标签字体大小调整为0.045
+  axisFrame->GetYaxis()->SetLabelSize(0.06); // 将Y轴标签字体大小调整为0.045
   axisFrame->Draw("axis");
 
 TLatex *label = new TLatex();
@@ -205,7 +205,7 @@ label->SetTextSize(0.08);
 label->SetTextAngle(90);
 label->SetTextAlign(22); // 设置文本居中对齐
 label->DrawLatexNDC(0.05, 0.5, "p/#pi");// 使用NDC坐标
-addText2(0.50, 0.85, "InJet");
+addText2(0.51, 0.85, "InJet");
   TString filename[1] = {"hist_outputallFSI_liang.root"}; 
   TString histname1 = "hProton_dPhi0"; 
   TString histname2 = "hProton_dPhi1"; 
@@ -258,8 +258,8 @@ addText2(0.50, 0.85, "InJet");
   TH2D *axisFrame2 = new TH2D("axisFrame2", "; ; ", 100, 0,3, 100, 0, 1.3); // Y轴范围调整为0到2
   axisFrame2->GetYaxis()->SetTickLength(0.02); // 调整刻度长度
   axisFrame2->GetXaxis()->SetTickLength(0.02);
-    axisFrame->GetXaxis()->SetLabelSize(0.045); // 将X轴标签字体大小调整为0.045
-  axisFrame->GetYaxis()->SetLabelSize(0.045); // 将Y轴标签字体大小调整为0.045
+  axisFrame2->GetXaxis()->SetLabelSize(0.06); // 将X轴标签字体大小调整为0.045
+  axisFrame2->GetYaxis()->SetLabelSize(0.06); // 将Y轴标签字体大小调整为0.045
   axisFrame2->Draw("axis");
   TPaveText *text2 = new TPaveText(0.54, 0.05, 0.575, 0.06, "NDC");
   text2->AddText("p_{T}(GeV/c)");

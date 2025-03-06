@@ -14,7 +14,7 @@ TGraphErrors* drawConnectedPoints(TH1D* hist, Color_t color, Style_t markerStyle
     int count = 0; // 用于记录满足条件的点的数量
     for (int i = 1; i <= n; ++i) {
         double binCenter = hist->GetBinCenter(i);
-        if (binCenter < 3&&binCenter >0.25) { // 只保留 x < 3 的点
+        if (binCenter) { // 只保留 x < 3 的点
             x[count] = binCenter;
             y[count] = hist->GetBinContent(i);
             ey[count] = hist->GetBinError(i);
@@ -138,7 +138,7 @@ void drawK() {
       TCanvas *c1 = new TCanvas("c1", "c1", 1200, 800); // 调整画布尺寸为1200x800
     c1->SetTicks(1, 1); // 开启X/Y轴的双边刻度
     c1->SetMargin(0.17, 0.17, 0.18, 0.1); // 调整边距
-  TH2D *axisFrame = new TH2D("axisFrame", "; ; ", 100, 0, 3, 100, 0, 0.4);
+  TH2D *axisFrame = new TH2D("axisFrame", "; ; ", 100, 0, 5, 100, 0, 0.5);
   axisFrame->GetYaxis()->SetTickLength(0.02); // 调整刻度长度
   axisFrame->GetXaxis()->SetTickLength(0.02);
   axisFrame->GetXaxis()->SetLabelSize(0.045); // 将X轴标签字体大小调整为0.045
@@ -208,7 +208,7 @@ void drawK() {
   legend->Draw();
 
   addText(0.20, 0.73, "allFSI");
-  addText2(0.45, 0.8, "Transverse");
+  addText2(0.41, 0.83, "Transverse");
 
-  c1->SaveAs("P_PI_Tr.png");
+  c1->SaveAs("2P_PI_Tr.png");
 }

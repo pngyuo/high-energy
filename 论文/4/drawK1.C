@@ -79,7 +79,7 @@ TH1D* getCentPtProjections(const TString& filename, const TString& histname, dou
   TFile* infile = new TFile(filename, "READ");
   TH3D* hist3D = (TH3D*)infile->Get(histname);
 
-  TH1D *chargedParticlesCount = (TH1D*)infile->Get("chargedParticlesHist");
+  TH1D *chargedParticlesCount = (TH1D*)infile->Get("nTHist");
 
   double totalChargedParticles = 0; // 加权总和
   double nEvents = 0;  // 总的事件数
@@ -91,9 +91,9 @@ TH1D* getCentPtProjections(const TString& filename, const TString& histname, dou
   }
   averageNT = totalChargedParticles / nEvents;  // 计算加权平均NT
   cout << "averageNT: " << averageNT << endl;
-
+  int binEnd = hist3D->GetXaxis()->FindBin(3.0);
   // 投影到Z轴，并限制X和Y轴的范围
-  TH1D* histProjZ = hist3D->ProjectionZ("histProjZ", 1, hist3D->GetNbinsX(), 1, hist3D->GetNbinsY());
+  TH1D* histProjZ = hist3D->ProjectionZ("histProjZ", 1, binEnd, 1, hist3D->GetNbinsY());
 
   // 获取原始直方图的bins数量和X轴范围
   int nbins = histProjZ->GetNbinsX();
@@ -149,7 +149,7 @@ axisFrame->GetXaxis()->SetTickLength(0.02);
 axisFrame->GetXaxis()->SetLabelSize(0.045); // 将X轴标签字体大小调整为0.045
 axisFrame->GetYaxis()->SetLabelSize(0.045); // 将Y轴标签字体大小调整为0.045
 axisFrame->Draw("axis");  // 只绘制坐标轴，不绘制直方图
-    TString filenames[3] = {"hist_outputallFSI.root", "hist_outputnoFSI.root", "hist_outputnohFSI.root"};
+    TString filenames[3] = {"hist_outputallFSI_liang.root", "hist_outputnoFSI_liang.root", "hist_outputnohFSI_liang.root"};
     TString histname = "hKCh_dPhi1";
     TString histname1= "hPiCh_dPhi1";
     TString filenames1= "k_pi_tr.root";
@@ -178,11 +178,12 @@ for(int i=0;i<3;++i){
 
 
 }
-        addText2(0.45, 0.8, "Transverse");
-        TLegend *legend = new TLegend(0.19, 0.70, 0.78,0.87);
-        legend->SetNColumns(1);
-        legend->SetFillStyle(0);
-        legend->SetBorderSize(0);
+        addText2(0.43, 0.83, "Toward");
+        TLegend *legend = new TLegend(0.19, 0.70, 0.90, 0.87);
+legend->SetNColumns(1);
+legend->SetFillStyle(0);
+legend->SetBorderSize(0);
+legend->SetMargin(0.10);
  
   TPaveText *text = new TPaveText(0.425, 0.05, 0.575, 0.06, "NDC");
   text->AddText("R_{T}");
@@ -203,7 +204,7 @@ for(int i=0;i<3;++i){
     marker1->SetMarkerSize(1);
     marker1->SetLineWidth(2); 
     marker1->SetLineColor(kBlack);
-    legend->AddEntry(marker1, "ALICE", "lp");
+    legend->AddEntry(marker1, "ALICE", "p");
 
 
     TGraphErrors *marker2 = new TGraphErrors();
@@ -231,6 +232,6 @@ for(int i=0;i<3;++i){
     legend->AddEntry(marker4, "nohFSI", "lp");
     legend->Draw(); 
 
-    c1->SaveAs("k_tr.png");
+    c1->SaveAs("k_to.png");
     //c1->SaveAs("p_pi.pdf");
 }

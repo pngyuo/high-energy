@@ -13,7 +13,7 @@ TGraphErrors* drawConnectedPoints(TH1D* hist, Color_t color, Style_t markerStyle
     int count = 0; // 用于记录满足条件的点的数量
     for (int i = 1; i <= n; ++i) {
         double binCenter = hist->GetBinCenter(i);
-        if (binCenter < 3&&binCenter >0.25) { // 只保留 x < 3 的点
+        if (binCenter < 3&&binCenter) { // 只保留 x < 3 的点
             x[count] = binCenter;
             y[count] = hist->GetBinContent(i);
             ey[count] = hist->GetBinError(i);
@@ -195,7 +195,7 @@ TString filenames[1] = {"hist_outputallFSI_liang.root"};
     //legend->AddEntry(marker4, "nohFSI", "lp");
     legend->Draw(); 
 
-  addText2(0.45, 0.85, "Toward");
+  addText2(0.43, 0.83, "Toward");
   addText4(0.40, 0.24, "#Kappa^{+}+#Kappa^{-}");
   c1->SetLogy(); // 设置y轴为对数刻度
   c1->SaveAs("Ks_1To.png");

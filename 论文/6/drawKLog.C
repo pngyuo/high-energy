@@ -169,8 +169,8 @@ void drawKLog(){
   TH2D *axisFrame = new TH2D("axisFrame", "; ; ", 100, 0, 3, 100, 0.008, 0.3);
   axisFrame->GetYaxis()->SetTickLength(0.02); // 调整刻度长度
   axisFrame->GetXaxis()->SetTickLength(0.02);
-  axisFrame->GetXaxis()->SetLabelSize(0.045); // 将X轴标签字体大小调整为0.045
-  axisFrame->GetYaxis()->SetLabelSize(0.045); // 将Y轴标签字体大小调整为0.045
+  axisFrame->GetXaxis()->SetLabelSize(0.06); // 将X轴标签字体大小调整为0.045
+  axisFrame->GetYaxis()->SetLabelSize(0.06); // 将Y轴标签字体大小调整为0.045
   axisFrame->Draw("axis");
 TLatex *label = new TLatex();
 label->SetTextSize(0.08);
@@ -221,8 +221,8 @@ label->DrawLatexNDC(0.05, 0.5, "dN/(dp_{T}dy)(GeV/c)^{-1}"); // 使用NDC坐标
   TH2D *axisFrame2 = new TH2D("axisFrame2", "; ; ", 100, 0,3, 100, 0, 1.1); // Y轴范围调整为0到2
   axisFrame2->GetYaxis()->SetTickLength(0.02); // 调整刻度长度
   axisFrame2->GetXaxis()->SetTickLength(0.02);
-    axisFrame->GetXaxis()->SetLabelSize(0.045); // 将X轴标签字体大小调整为0.045
-  axisFrame->GetYaxis()->SetLabelSize(0.045); // 将Y轴标签字体大小调整为0.045
+  axisFrame2->GetXaxis()->SetLabelSize(0.06); // 将X轴标签字体大小调整为0.045
+  axisFrame2->GetYaxis()->SetLabelSize(0.06); // 将Y轴标签字体大小调整为0.045
   axisFrame2->Draw("axis");
  TPaveText *text2 = new TPaveText(0.54, 0.05, 0.575, 0.06, "NDC");
   text2->AddText("p_{T}(GeV/c)");
