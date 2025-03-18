@@ -93,7 +93,7 @@ std::vector<TH1D*> getCentPtProjections(const TString& filename, const TString& 
         // 获取 Z 轴上对应的 bin 范围
         int binLow = hist3D->GetZaxis()->FindBin(ntRangeLow);  // NT 下限对应的 bin
         int binUp = hist3D->GetZaxis()->FindBin(ntRangeUp);  // NT 上限对应的 bin
-        binUp -=1;
+        binUp-=1;
         // 打印 bin 范围调试信息
         cout << "RT Range[" << rtRanges[i] << ", " << rtUpperRanges[i] << "] mapped to NT Bins[" 
              << binLow << ", " << binUp << "]" << endl;
@@ -138,7 +138,7 @@ void drawK() {
       TCanvas *c1 = new TCanvas("c1", "c1", 1200, 800); // 调整画布尺寸为1200x800
     c1->SetTicks(1, 1); // 开启X/Y轴的双边刻度
     c1->SetMargin(0.17, 0.17, 0.18, 0.1); // 调整边距
-  TH2D *axisFrame = new TH2D("axisFrame", "; ; ", 100, 0, 5, 100, 0, 0.5);
+  TH2D *axisFrame = new TH2D("axisFrame", "; ; ", 100, 0, 5, 100, 0, 0.53);
   axisFrame->GetYaxis()->SetTickLength(0.02); // 调整刻度长度
   axisFrame->GetXaxis()->SetTickLength(0.02);
   axisFrame->GetXaxis()->SetLabelSize(0.045); // 将X轴标签字体大小调整为0.045
@@ -158,7 +158,7 @@ void drawK() {
   label->DrawLatexNDC(0.05, 0.5, "p/#pi"); // 使用NDC坐标
 
   TString filenames= "hist_outputallFSI_liang.root";
-  TString histname1 = "hProton_dPhi1";
+  TString histname1 = "hKCh_dPhi1";
   TString histname2 = "hPiCh_dPhi1";
 
   std::vector<Color_t> colors = {kBlack,kRed, kBlue, kMagenta};
@@ -210,5 +210,5 @@ void drawK() {
   addText(0.20, 0.73, "allFSI");
   addText2(0.41, 0.83, "Transverse");
 
-  c1->SaveAs("2P_PI_Tr.png");
+  c1->SaveAs("5k_Tr.png");
 }

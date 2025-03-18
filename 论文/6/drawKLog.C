@@ -96,7 +96,7 @@ std::vector<TH1D*> getCentPtProjections(const TString& filename, const TString& 
         // 获取 Z 轴上对应的 bin 范围
         int binLow = hist3D->GetZaxis()->FindBin(ntRangeLow);  // NT 下限对应的 bin
         int binUp = hist3D->GetZaxis()->FindBin(ntRangeUp);  // NT 上限对应的 bin
-        binUp -=1;
+        //binUp -=1;
         // 打印 bin 范围调试信息
         cout << "RT Range[" << rtRanges[i] << ", " << rtUpperRanges[i] << "] mapped to NT Bins[" 
              << binLow << ", " << binUp << "]" << endl;
@@ -253,6 +253,6 @@ label->DrawLatexNDC(0.05, 0.5, "dN/(dp_{T}dy)(GeV/c)^{-1}"); // 使用NDC坐标
   line2->SetLineColor(kBlack);
   line2->Draw();
 
-  c1->SaveAs("1K__allFSI.png");
+  c1->SaveAs("2K__allFSI.png");
   //c1->SaveAs("proton_CR_Pt.pdf");
 }

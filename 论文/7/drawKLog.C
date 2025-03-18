@@ -226,29 +226,27 @@ addText2(0.51, 0.85, "InJet");
   drawGraphs(gPad,projections1, projections2,projections3, projections4,colors, markerStyles);
   //drawGraphs1(gPad,projections1, projections3,colors1, markerStyles1);
 
-    TGraphErrors *marker3 = new TGraphErrors();
-    marker3->SetMarkerStyle(20);
-    marker3->SetMarkerColor(kBlack);
-    marker3->SetMarkerSize(1);
-    marker3->SetLineWidth(0); 
-    marker3->SetLineColor(kBlue);
-    //legend->AddEntry(marker3, "nohFSI", "lp");
+  TLegend *legend = new TLegend(0.20, 0.67, 0.48,0.85);
+  legend->SetNColumns(1);
+  legend->SetFillStyle(0);
+  legend->SetBorderSize(0);
 
-    TGraphErrors *marker4 = new TGraphErrors();
-    marker4->SetMarkerStyle(20);
-    marker4->SetMarkerColor(kRed);
-    marker4->SetMarkerSize(1);
-    marker4->SetLineWidth(0); 
-    marker4->SetLineColor(kMagenta);
+  TGraphErrors *marker1 = new TGraphErrors();
+  marker1->SetMarkerStyle(20);
+  marker1->SetMarkerColor(kBlack);
+  marker1->SetMarkerSize(1);
+  marker1->SetLineWidth(2); 
+  marker1->SetLineColor(kBlack);
+  legend->AddEntry(marker1, "0<R_{T}<0.5", "lp");
 
-
-  TLegend *legend1 = new TLegend(0.20, 0.67, 0.43,0.85);
-    legend1->SetNColumns(1);
-    legend1->SetFillStyle(0);
-    legend1->SetBorderSize(0);
-    legend1->AddEntry(marker3, "0<R_{T}<0.5", "lp");
-    legend1->AddEntry(marker4, "0.5<R_{T}<1.5", "lp");
-    legend1->Draw(); 
+  TGraphErrors *marker2 = new TGraphErrors();
+  marker2->SetMarkerStyle(20);
+  marker2->SetMarkerColor(kRed);
+  marker2->SetMarkerSize(1);
+  marker2->SetLineWidth(2); 
+  marker2->SetLineColor(kRed);
+  legend->AddEntry(marker2, "0.5<R_{T}<1.5", "lp");
+  legend->Draw(); 
 
   // 下半部分绘制除以Toward区域数据的结果
   c1->cd(2); // 切换到下半部分

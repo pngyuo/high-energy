@@ -180,6 +180,8 @@ label->DrawLatexNDC(0.05, 0.5, "P(R_{T})"); // 使用NDC坐标
     legend->SetNColumns(1);
     legend->SetFillStyle(0);
     legend->SetBorderSize(0);
+    legend->SetMargin(0.2);
+    legend->SetTextSize(0.05); // 增大图例字体大小
    
  TGraphErrors *marker1 = new TGraphErrors();
     marker1->SetMarkerStyle(24);
@@ -187,7 +189,7 @@ label->DrawLatexNDC(0.05, 0.5, "P(R_{T})"); // 使用NDC坐标
     marker1->SetMarkerSize(1);
     marker1->SetLineWidth(2); 
     marker1->SetLineColor(kBlack);
-    legend->AddEntry(marker1, "ALICE", "lp");
+    legend->AddEntry(marker1, "ALICE", "p");
 
     TGraphErrors *marker2 = new TGraphErrors();
     marker2->SetMarkerStyle(20);

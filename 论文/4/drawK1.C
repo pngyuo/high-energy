@@ -79,7 +79,7 @@ TH1D* getCentPtProjections(const TString& filename, const TString& histname, dou
   TFile* infile = new TFile(filename, "READ");
   TH3D* hist3D = (TH3D*)infile->Get(histname);
 
-  TH1D *chargedParticlesCount = (TH1D*)infile->Get("nTHist");
+  TH1D *chargedParticlesCount = (TH1D*)infile->Get("chargedParticlesHist");
 
   double totalChargedParticles = 0; // 加权总和
   double nEvents = 0;  // 总的事件数
@@ -91,9 +91,9 @@ TH1D* getCentPtProjections(const TString& filename, const TString& histname, dou
   }
   averageNT = totalChargedParticles / nEvents;  // 计算加权平均NT
   cout << "averageNT: " << averageNT << endl;
-  int binEnd = hist3D->GetXaxis()->FindBin(3.0);
+
   // 投影到Z轴，并限制X和Y轴的范围
-  TH1D* histProjZ = hist3D->ProjectionZ("histProjZ", 1, binEnd, 1, hist3D->GetNbinsY());
+  TH1D* histProjZ = hist3D->ProjectionZ("histProjZ", 1, hist3D->GetNbinsX(), 1, hist3D->GetNbinsY());
 
   // 获取原始直方图的bins数量和X轴范围
   int nbins = histProjZ->GetNbinsX();
@@ -103,7 +103,7 @@ TH1D* getCentPtProjections(const TString& filename, const TString& histname, dou
   // 定义新的bin边界
   std::vector<double> newBins;
   double currentX = xmin;
-  while (currentX < 2.5) {
+  while (currentX < 3) {
       newBins.push_back(currentX);
       currentX += rebinFactor1 * (histProjZ->GetXaxis()->GetBinWidth(1) / averageNT);
   }
@@ -143,16 +143,16 @@ void drawK1() {
   TCanvas *c1 = new TCanvas("c1", "c1", 1200, 800); // 调整画布尺寸为1200x800
   c1->SetTicks(1, 1); // 开启X/Y轴的双边刻度
   c1->SetMargin(0.17, 0.17, 0.18, 0.1); // 调整边距
-  TH2D *axisFrame = new TH2D("axisFrame", "; ; ", 100, 0, 5, 100, 0.11,0.21);
+  TH2D *axisFrame = new TH2D("axisFrame", "; ; ", 100, 0, 5, 100, 0,0.09);
 axisFrame->GetYaxis()->SetTickLength(0.02); // 调整刻度长度
 axisFrame->GetXaxis()->SetTickLength(0.02);
 axisFrame->GetXaxis()->SetLabelSize(0.045); // 将X轴标签字体大小调整为0.045
 axisFrame->GetYaxis()->SetLabelSize(0.045); // 将Y轴标签字体大小调整为0.045
 axisFrame->Draw("axis");  // 只绘制坐标轴，不绘制直方图
-    TString filenames[3] = {"hist_outputallFSI_liang.root", "hist_outputnoFSI_liang.root", "hist_outputnohFSI_liang.root"};
-    TString histname = "hKCh_dPhi1";
+    TString filenames[3] = {"hist_outputallFSI.root", "hist_outputnoFSI.root", "hist_outputnohFSI.root"};
+    TString histname = "hProton_dPhi1";
     TString histname1= "hPiCh_dPhi1";
-    TString filenames1= "k_pi_tr.root";
+    TString filenames1= "p_pi_tr.root";
 
     std::vector<Color_t> colors = {kRed, kBlue, kMagenta};
     std::vector<Style_t> markerStyles = {20, 21, 22};
@@ -179,16 +179,17 @@ for(int i=0;i<3;++i){
 
 }
         addText2(0.43, 0.83, "Toward");
-        TLegend *legend = new TLegend(0.19, 0.70, 0.90, 0.87);
+        TLegend *legend = new TLegend(0.19, 0.68, 0.95, 0.87);
 legend->SetNColumns(1);
 legend->SetFillStyle(0);
 legend->SetBorderSize(0);
-legend->SetMargin(0.10);
- 
+legend->SetMargin(0.1);
+legend->SetTextSize(0.05); // 增大图例字体大小
+
   TPaveText *text = new TPaveText(0.425, 0.05, 0.575, 0.06, "NDC");
   text->AddText("R_{T}");
   text->SetFillColor(0);
-    text->SetTextSize(0.08); // 增大字体大小
+  text->SetTextSize(0.08); // 增大字体大小
   text->SetTextAlign(22); // 文本居中对齐
   text->Draw("same");
 
@@ -232,6 +233,6 @@ legend->SetMargin(0.10);
     legend->AddEntry(marker4, "nohFSI", "lp");
     legend->Draw(); 
 
-    c1->SaveAs("k_to.png");
+    c1->SaveAs("5k_to.png");
     //c1->SaveAs("p_pi.pdf");
 }
