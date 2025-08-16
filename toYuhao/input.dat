@@ -1,0 +1,25 @@
+#/*************************************************************************
+#    > File Name: input.dat
+#    > Author: Liang Zheng
+#    > Mail: liangzhphy@gmail.com 
+#    > Created Time: Thu Sep 17 22:18:34 2020
+# ************************************************************************/
+
+Main:numberOfEvents = 1000
+#
+#symmetry c.m.s frame
+Beams:frameType = 1
+Beams:eCM = 13000
+Beams:idA = 2212
+Beams:idB = 2212 
+
+#HeavyIon:mode = 2
+#SoftQCD:nonDiffractive = on
+SoftQCD:nonDiffractive = on
+#SoftQCD:inelastic = on
+
+PartonVertex:setVertex = on
+Fragmentation:setVertices = on
+HadronLevel:Decay = off
+#HadronLevel:all = on
+
