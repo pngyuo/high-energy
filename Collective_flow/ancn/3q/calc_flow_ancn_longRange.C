@@ -190,12 +190,10 @@ void calc_flow_ancn_longRange() {
     double a2_Eta_err_high[50];
     double a2_Eta_low[50];
     double a2_Eta_err_low[50];
-    double etaBinHalfWidths[nEtaBins];  // 改为存储半宽
+    double etaBinWidth = (etaMax - etaMin) / nEtaBins;  // 固定bin宽度
 
     for (int iEta = 0; iEta < nEtaBins; iEta++) {
-        double eta = etaMin + (iEta + 0.5) * (etaMax - etaMin) / nEtaBins;
-        double binWidth = (etaMax - etaMin) / nEtaBins;
-        etaBinHalfWidths[iEta] = binWidth / 2.0;  // 计算半宽
+        double eta = etaMin + (iEta + 0.5) * etaBinWidth;  // bin中心位置
         etaValues[iEta] = eta;
         int zBin = iEta + 6;
         
@@ -271,16 +269,22 @@ void calc_flow_ancn_longRange() {
         delete hmix_eta_low;
     }
 
-    int rebinFactor = 2;
+    // ==================== 修正重分组逻辑 ====================
+    int rebinFactor = 1;
     int newNEtaBins = nEtaBins / rebinFactor;
     double newEtaValues[newNEtaBins], newC2_Eta[newNEtaBins], newC2_Eta_err[newNEtaBins];
     double newA2_Eta_high[newNEtaBins], newA2_Eta_err_high[newNEtaBins];
     double newA2_Eta_low[newNEtaBins], newA2_Eta_err_low[newNEtaBins];
-    double newEtaBinHalfWidths[newNEtaBins];  // 存储合并后的半宽
     
-    double binWidth = (etaMax - etaMin) / nEtaBins;
-    double rebinnedBinWidth = binWidth * rebinFactor;
-    double rebinnedHalfWidth = rebinnedBinWidth / 2.0;
+    // 计算新的bin宽度和半宽
+    double newBinWidth = etaBinWidth * rebinFactor;
+    double newHalfWidth = newBinWidth / 2.0;
+    
+    // 创建横坐标误差数组（所有点相同）
+    double* xErrors = new double[newNEtaBins];
+    for (int i = 0; i < newNEtaBins; i++) {
+        xErrors[i] = newHalfWidth;
+    }
 
     for (int i = 0; i < newNEtaBins; i++) {
         int start = i * rebinFactor;
@@ -305,32 +309,35 @@ void calc_flow_ancn_longRange() {
             sumEta += etaValues[idx];
         }
         
+        // 计算平均值
         newC2_Eta[i] = sumC2 / rebinFactor;
-        newC2_Eta_err[i] = sqrt(sumC2Err2) / rebinFactor;
-        
         newA2_Eta_high[i] = sumA2_high / rebinFactor;
-        newA2_Eta_err_high[i] = sqrt(sumA2_high_Err2) / rebinFactor;
-        
         newA2_Eta_low[i] = sumA2_low / rebinFactor;
+        
+        // 计算误差：误差平方和的平方根除以重分组因子
+        newC2_Eta_err[i] = sqrt(sumC2Err2) / rebinFactor;
+        newA2_Eta_err_high[i] = sqrt(sumA2_high_Err2) / rebinFactor;
         newA2_Eta_err_low[i] = sqrt(sumA2_low_Err2) / rebinFactor;
         
+        // 新bin的中心位置：原始bin中心的平均值
         newEtaValues[i] = sumEta / rebinFactor;
-        newEtaBinHalfWidths[i] = rebinnedHalfWidth;  // 使用合并后的半宽
     }
 
-    // 创建图形时使用半宽作为横坐标误差
-    TGraphErrors *gr_c2_rebinned = new TGraphErrors(newNEtaBins, newEtaValues, newC2_Eta, newEtaBinHalfWidths, newC2_Eta_err);
-    TGraphErrors *gr_a2_high_rebinned = new TGraphErrors(newNEtaBins, newEtaValues, newA2_Eta_high, newEtaBinHalfWidths, newA2_Eta_err_high);
-    TGraphErrors *gr_a2_low_rebinned = new TGraphErrors(newNEtaBins, newEtaValues, newA2_Eta_low, newEtaBinHalfWidths, newA2_Eta_err_low);
+    // ==================== 创建图形对象 ====================
+    // 使用横坐标误差数组
+    TGraphErrors *gr_c2_rebinned = new TGraphErrors(newNEtaBins, newEtaValues, newC2_Eta, xErrors, newC2_Eta_err);
+    TGraphErrors *gr_a2_high_rebinned = new TGraphErrors(newNEtaBins, newEtaValues, newA2_Eta_high, xErrors, newA2_Eta_err_high);
+    TGraphErrors *gr_a2_low_rebinned = new TGraphErrors(newNEtaBins, newEtaValues, newA2_Eta_low, xErrors, newA2_Eta_err_low);
     
-    TCanvas *c = new TCanvas("c", "c", 800, 600);
+    TCanvas *c = new TCanvas("c", "Long-range Flow Coefficients", 800, 600);
     c->cd();
     
-    gr_c2_rebinned->SetTitle("Long-range flow coefficients vs #eta");
+    // 设置图形属性
+    gr_c2_rebinned->SetTitle("Long-range Flow Coefficients vs #eta");
     gr_c2_rebinned->GetXaxis()->SetTitle("#eta");
-    gr_c2_rebinned->GetYaxis()->SetTitle("Coefficient value");
+    gr_c2_rebinned->GetYaxis()->SetTitle("Coefficient Value");
     gr_c2_rebinned->GetXaxis()->SetRangeUser(etaMin, etaMax);
-    gr_c2_rebinned->GetYaxis()->SetRangeUser(0.000, 0.008);
+    gr_c2_rebinned->GetYaxis()->SetRangeUser(0.0025, 0.01);
     
     gr_c2_rebinned->SetMarkerStyle(20);
     gr_c2_rebinned->SetMarkerColor(kRed);
@@ -370,6 +377,7 @@ void calc_flow_ancn_longRange() {
     // 清理内存
     delete c;
     delete leg;
+    delete[] xErrors;  // 释放横坐标误差数组
     delete file_1;
     delete file_2;
 }
