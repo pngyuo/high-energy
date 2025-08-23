@@ -73,6 +73,25 @@ double funTemplate(double *x, double *par) {
     return funRidge->Eval(x[0]);
 }
   
+void plotRnVsEta(TGraphErrors* graph, const TString& name, const TString& title) {
+    TCanvas c("c", "c", 800, 600);
+    graph->SetTitle(title);
+    graph->GetXaxis()->SetTitle("|#eta^{a}|");
+    graph->GetYaxis()->SetTitle("r_{n}");
+    graph->SetMarkerStyle(20);
+    graph->SetMarkerColor(kBlue);
+    graph->Draw("AP");
+    
+    // 添加参考线 y=1
+    TLine line(graph->GetXaxis()->GetXmin(), 1, 
+               graph->GetXaxis()->GetXmax(), 1);
+    line.SetLineStyle(2);
+    line.SetLineColor(kRed);
+    line.Draw();
+    
+    c.SaveAs(Form("rn_plots/%s.png", name.Data()));
+}
+
 // 反对称相除拟合函数
 void fitRnAndSave(TGraphErrors* graph, const TString& name, double& F_n, double& F_n_err) {
     TCanvas c;
@@ -323,7 +342,6 @@ void calc_flow_fn_longRange_new() {
             delete hmix_eta_low;
         }
 
-        // 准备反对称相除的数据
         const int halfBins = nEtaBins / 2;
         double absEtaValues[halfBins];  // |eta| 值
         
@@ -336,29 +354,49 @@ void calc_flow_fn_longRange_new() {
         double r_an_f2[halfBins], r_an_f2_err[halfBins];
         getRnFromVn(a2_Eta_high, a2_Eta_err, r_an_f2, r_an_f2_err, nEtaBins);
         TGraphErrors *gr_an_f2 = new TGraphErrors(halfBins, absEtaValues, r_an_f2, 0, r_an_f2_err);
+        
+        // 绘制Rn随Eta变化图 - an_f2
+        plotRnVsEta(gr_an_f2, Form("an_f2_cent%d_rn_vs_eta", icent), 
+                   Form("Cent %d: r_{2} vs |#eta^{a}| (Before NFS)", icent));
+        
         fitRnAndSave(gr_an_f2, Form("an_f2_cent%d", icent), cent_an_f2[icent], err_an_f2[icent]);
         delete gr_an_f2;
         
         // 对an_f3进行反对称相除处理
-        double r_an_f3[halfBins], r_an_f3_err[halfBins];
-        getRnFromVn(a3_Eta_high, a3_Eta_err, r_an_f3, r_an_f3_err, nEtaBins);
-        TGraphErrors *gr_an_f3 = new TGraphErrors(halfBins, absEtaValues, r_an_f3, 0, r_an_f3_err);
-        fitRnAndSave(gr_an_f3, Form("an_f3_cent%d", icent), cent_an_f3[icent], err_an_f3[icent]);
-        delete gr_an_f3;
+        //double r_an_f3[halfBins], r_an_f3_err[halfBins];
+        // getRnFromVn(a3_Eta_high, a3_Eta_err, r_an_f3, r_an_f3_err, nEtaBins);
+        // TGraphErrors *gr_an_f3 = new TGraphErrors(halfBins, absEtaValues, r_an_f3, 0, r_an_f3_err);
+        
+        // 绘制Rn随Eta变化图 - an_f3
+        // plotRnVsEta(gr_an_f3, Form("an_f3_cent%d_rn_vs_eta", icent), 
+        //            Form("Cent %d: r_{3} vs |#eta^{a}| (Before NFS)", icent));
+        
+        // fitRnAndSave(gr_an_f3, Form("an_f3_cent%d", icent), cent_an_f3[icent], err_an_f3[icent]);
+        // delete gr_an_f3;
         
         // 对cn_f2进行反对称相除处理
         double r_cn_f2[halfBins], r_cn_f2_err[halfBins];
         getRnFromVn(c2_Eta, c2_Eta_err, r_cn_f2, r_cn_f2_err, nEtaBins);
         TGraphErrors *gr_cn_f2 = new TGraphErrors(halfBins, absEtaValues, r_cn_f2, 0, r_cn_f2_err);
+        
+        // 绘制Rn随Eta变化图 - cn_f2
+        plotRnVsEta(gr_cn_f2, Form("cn_f2_cent%d_rn_vs_eta", icent), 
+                   Form("Cent %d: r_{2} vs |#eta^{a}| (After NFS)", icent));
+        
         fitRnAndSave(gr_cn_f2, Form("cn_f2_cent%d", icent), cent_cn_f2[icent], err_cn_f2[icent]);
         delete gr_cn_f2;
         
         // 对cn_f3进行反对称相除处理
-        double r_cn_f3[halfBins], r_cn_f3_err[halfBins];
-        getRnFromVn(c3_Eta, c3_Eta_err, r_cn_f3, r_cn_f3_err, nEtaBins);
-        TGraphErrors *gr_cn_f3 = new TGraphErrors(halfBins, absEtaValues, r_cn_f3, 0, r_cn_f3_err);
-        fitRnAndSave(gr_cn_f3, Form("cn_f3_cent%d", icent), cent_cn_f3[icent], err_cn_f3[icent]);
-        delete gr_cn_f3;
+        //double r_cn_f3[halfBins], r_cn_f3_err[halfBins];
+        // getRnFromVn(c3_Eta, c3_Eta_err, r_cn_f3, r_cn_f3_err, nEtaBins);
+        // TGraphErrors *gr_cn_f3 = new TGraphErrors(halfBins, absEtaValues, r_cn_f3, 0, r_cn_f3_err);
+        
+        // 绘制Rn随Eta变化图 - cn_f3
+        // plotRnVsEta(gr_cn_f3, Form("cn_f3_cent%d_rn_vs_eta", icent), 
+        //            Form("Cent %d: r_{3} vs |#eta^{a}| (After NFS)", icent));
+        
+        // fitRnAndSave(gr_cn_f3, Form("cn_f3_cent%d", icent), cent_cn_f3[icent], err_cn_f3[icent]);
+        // delete gr_cn_f3;
     }
 
     // 创建并绘制四个数据集
@@ -366,18 +404,18 @@ void calc_flow_fn_longRange_new() {
     cCombined->SetLogy();
     TGraphErrors *gr_f2_raw = new TGraphErrors(N_cent, Nsel_val, cent_an_f2, Nsel_bin_width, err_an_f2);
     TGraphErrors *gr_f2_sub = new TGraphErrors(N_cent, Nsel_val, cent_cn_f2, Nsel_bin_width, err_cn_f2); 
-    TGraphErrors *gr_f3_raw = new TGraphErrors(N_cent-1, &Nsel_val[1], &cent_an_f3[1], 0, &err_an_f3[1]);
-    TGraphErrors *gr_f3_sub = new TGraphErrors(N_cent-1, &Nsel_val[1], &cent_cn_f3[1], 0, &err_cn_f3[1]);
+    // TGraphErrors *gr_f3_raw = new TGraphErrors(N_cent-1, &Nsel_val[1], &cent_an_f3[1], 0, &err_an_f3[1]);
+    // TGraphErrors *gr_f3_sub = new TGraphErrors(N_cent-1, &Nsel_val[1], &cent_cn_f3[1], 0, &err_cn_f3[1]);
 
     gr_f2_raw->SetMarkerStyle(20); gr_f2_raw->SetMarkerColor(kRed);
-    gr_f3_raw->SetMarkerStyle(21); gr_f3_raw->SetMarkerColor(kBlue);
+    // gr_f3_raw->SetMarkerStyle(21); gr_f3_raw->SetMarkerColor(kBlue);
     gr_f2_sub->SetMarkerStyle(22); gr_f2_sub->SetMarkerColor(kGreen+2);
-    gr_f3_sub->SetMarkerStyle(23); gr_f3_sub->SetMarkerColor(kMagenta);
+    // gr_f3_sub->SetMarkerStyle(23); gr_f3_sub->SetMarkerColor(kMagenta);
 
     gr_f2_raw->Draw("AP");
-    gr_f3_raw->Draw("P SAME");
+    // gr_f3_raw->Draw("P SAME");
     gr_f2_sub->Draw("P SAME");
-    gr_f3_sub->Draw("P SAME");
+    // gr_f3_sub->Draw("P SAME");
 
     gr_f2_raw->GetXaxis()->SetTitle("N_{ch}");
     gr_f2_raw->GetYaxis()->SetTitle("F_{n}");
@@ -386,17 +424,17 @@ void calc_flow_fn_longRange_new() {
 
     TLegend *leg = new TLegend(0.7,0.7,0.9,0.9);
     leg->AddEntry(gr_f2_raw, "f2^{raw}", "p");
-    leg->AddEntry(gr_f3_raw, "f3^{raw}", "p");
+    // leg->AddEntry(gr_f3_raw, "f3^{raw}", "p");
     leg->AddEntry(gr_f2_sub, "f2^{sub}", "p");
-    leg->AddEntry(gr_f3_sub, "f3^{sub}", "p");
+    // leg->AddEntry(gr_f3_sub, "f3^{sub}", "p");
     leg->Draw();
 
     cCombined->SaveAs("Fn_vs_Nch.png");
 
     TFile *outfile = new TFile("longRange_flow.root", "recreate");
     gr_f2_raw->Write("gr_f2_raw");
-    gr_f3_raw->Write("gr_f3_raw");
+    // gr_f3_raw->Write("gr_f3_raw");
     gr_f2_sub->Write("gr_f2_sub");
-    gr_f3_sub->Write("gr_f3_sub");
+    // gr_f3_sub->Write("gr_f3_sub");
     outfile->Close();
 }
