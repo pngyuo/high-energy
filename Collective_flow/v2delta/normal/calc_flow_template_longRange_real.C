@@ -88,7 +88,7 @@ double getV22(TH1D *hYHigh, TH1D *hYLow, double &err, double &v33, double &v33er
   gYIntegral=hYHigh->Integral("width");
   hGlobalPeriph = hYLow;
   TF1 *fitFun = new TF1("fitFun", funTemplate, -0.5*PI, 1.5*PI, 3);
-  fitFun->SetParameters(2, 1,1);
+  fitFun->SetParameters(1, 0.1,-0.1);
   hYHigh->Fit("fitFun");
   err = fitFun->GetParError(1);
   v33 = fitFun->GetParameter(2);
@@ -268,24 +268,25 @@ void calc_flow_template_longRange_real(){
   gSystem->mkdir("sumridge_plots", kTRUE);
   
   // Define the three files and their properties
-  TString filenames[3] = {
+  TString filenames[4] = {
     "hist_ampt_normal_1.5mb_longRange_yuhao.root",
     "hist_ampt_normal_0.15mb_longRange_yuhao.root", 
-    "hist_ampt_normal_1.5mb_a_0.8_b_0.4_longRange_yuhao.root"
+    "hist_ampt_normal_1.5mb_a_0.8_b_0.4_longRange_yuhao.root",
+    "hist_ampt_normal_0.15mb_a_0.8_b_0.4_longRange_yuhao.root"
   };
   
-  TString labels[3] = {"normal_1.5mb", "normal_0.15mb", "normal_1.5mb_a0.8_b0.4"};
-  int colors[3] = {kRed, kBlue, kGreen};
-  int markers[3] = {20, 21, 22};
+  TString labels[4] = {"normal_1.5mb", "normal_0.15mb", "normal_1.5mb_a0.8_b0.4","normal_0.15mb_a0.8_b0.4"};
+  int colors[4] = {kBlack,kRed, kBlue, kGreen};
+  int markers[4] = {20, 21, 22,23};
   
   // Arrays to store graphs for all files
-  TGraphErrors *gr_v22_Nch[3];
-  TGraphErrors *gr_v33_Nch[3];
-  TGraphErrors *gr_v2_pt[3];
-  TGraphErrors *gr_v3_pt[3];
+  TGraphErrors *gr_v22_Nch[4];
+  TGraphErrors *gr_v33_Nch[4];
+  TGraphErrors *gr_v2_pt[4];
+  TGraphErrors *gr_v3_pt[4];
   
   // Process all three files
-  for(int ifile = 0; ifile < 3; ifile++) {
+  for(int ifile = 0; ifile < 4; ifile++) {
     cout << "\n=== Processing file " << ifile+1 << ": " << filenames[ifile] << " ===" << endl;
     processFile(filenames[ifile], labels[ifile], colors[ifile], 
                 &gr_v22_Nch[ifile], &gr_v33_Nch[ifile], 
@@ -301,7 +302,7 @@ void calc_flow_template_longRange_real(){
   // Create output file and save individual graphs
   TFile *outfile = new TFile("longRange_flow_comparison.root", "recreate");
   
-  for(int ifile = 0; ifile < 3; ifile++) {
+  for(int ifile = 0; ifile < 4; ifile++) {
     gr_v22_Nch[ifile]->Write(Form("gr_v22_Nch_%s", labels[ifile].Data()));
     gr_v33_Nch[ifile]->Write(Form("gr_v33_Nch_%s", labels[ifile].Data()));
     gr_v2_pt[ifile]->Write(Form("gr_v2_pt_%s", labels[ifile].Data()));
@@ -316,9 +317,10 @@ void calc_flow_template_longRange_real(){
   TH2D *hframe_Nch = new TH2D("hframe_Nch", ";N_{ch};v_{2}{2}", 100, 0, 80, 100, 0, 0.0072);
   hframe_Nch->Draw();
   
-  TLegend *leg_Nch = new TLegend(0.15, 0.5, 0.3, 0.65);
+  TLegend *leg_Nch = new TLegend(0.15, 0.4, 0.4, 0.7);
+  leg_Nch->SetTextSize(0.030);
   leg_Nch->SetBorderSize(0);
-  for(int ifile = 0; ifile < 3; ifile++) {
+  for(int ifile = 0; ifile < 4; ifile++) {
     gr_v22_Nch[ifile]->Draw("same p");
     leg_Nch->AddEntry(gr_v22_Nch[ifile], labels[ifile], "p");
   }
@@ -331,8 +333,8 @@ void calc_flow_template_longRange_real(){
   //TH2D *hframe_v33_Nch = new TH2D("hframe_v33_Nch", ";N_{ch};v_{3}{3}", 100, 0, 80, 100, 0, 0.0032);
   //hframe_v33_Nch->Draw();
   
-  // TLegend *leg_v33_Nch = new TLegend(0.1, 0.7, 0.25, 0.85);
-  // for(int ifile = 0; ifile < 3; ifile++) {
+  // TLegend *leg_v33_Nch = new TLegend(0.1, 0.6, 0.3, 0.9);
+  // for(int ifile = 0; ifile < 4; ifile++) {
   //   gr_v33_Nch[ifile]->Draw("same p");
   //   leg_v33_Nch->AddEntry(gr_v33_Nch[ifile], labels[ifile], "p");
   // }
@@ -344,9 +346,10 @@ void calc_flow_template_longRange_real(){
   
   TH2D *hframe_pt = new TH2D("hframe_pt", ";p_{T} (GeV/c);v_{2}", 100, 0, 4, 100, 0, 0.0152);
   hframe_pt->Draw();
-  TLegend *leg_pt = new TLegend(0.15, 0.7, 0.3, 0.85);
+  TLegend *leg_pt = new TLegend(0.1, 0.6, 0.25, 0.9);
+  leg_pt->SetTextSize(0.030);
   leg_pt->SetBorderSize(0);
-  for(int ifile = 0; ifile < 3; ifile++) {
+  for(int ifile = 0; ifile < 4; ifile++) {
     gr_v2_pt[ifile]->Draw("same p");
     leg_pt->AddEntry(gr_v2_pt[ifile], labels[ifile], "p");
   }
@@ -362,7 +365,7 @@ void calc_flow_template_longRange_real(){
   //hframe_v3_pt->Draw();
   
   // TLegend *leg_v3_pt = new TLegend(0.6, 0.7, 0.85, 0.85);
-  // for(int ifile = 0; ifile < 3; ifile++) {
+  // for(int ifile = 0; ifile < 4; ifile++) {
   //   gr_v3_pt[ifile]->Draw("same p");
   //   leg_v3_pt->AddEntry(gr_v3_pt[ifile], labels[ifile], "p");
   // }
@@ -374,28 +377,28 @@ void calc_flow_template_longRange_real(){
   c_combined->Divide(2, 2);
   c_combined->cd(1);
   hframe_Nch->Draw();
-  for(int ifile = 0; ifile < 3; ifile++) {
+  for(int ifile = 0; ifile < 4; ifile++) {
     gr_v22_Nch[ifile]->Draw("same p");
   }
   leg_Nch->Draw();
   
   c_combined->cd(2);
   // hframe_v33_Nch->Draw();
-  // for(int ifile = 0; ifile < 3; ifile++) {
+  // for(int ifile = 0; ifile < 4; ifile++) {
   //   gr_v33_Nch[ifile]->Draw("same p");
   // }
   // leg_v33_Nch->Draw();
   
   c_combined->cd(3);
   hframe_pt->Draw();
-  for(int ifile = 0; ifile < 3; ifile++) {
+  for(int ifile = 0; ifile < 4; ifile++) {
     gr_v2_pt[ifile]->Draw("same p");
   }
   leg_pt->Draw();
   
   c_combined->cd(4);
   //hframe_v3_pt->Draw();
-  // for(int ifile = 0; ifile < 3; ifile++) {
+  // for(int ifile = 0; ifile < 4; ifile++) {
   //   gr_v3_pt[ifile]->Draw("same p");
   // }
   // leg_v3_pt->Draw();

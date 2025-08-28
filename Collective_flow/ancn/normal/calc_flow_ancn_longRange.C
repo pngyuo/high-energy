@@ -8,9 +8,12 @@
 #include <TLatex.h>
 #include <TGraphErrors.h>
 #include <TString.h>
+#include <TLegend.h>
+#include <TDirectory.h>
 
 const double PI = 3.1415926;
 double gYIntegral = 0;
+
 void divideHist(TH2D *hin) {
     for (int i = 1; i <= hin->GetNbinsX(); ++i) {
         for (int j = 1; j <= hin->GetNbinsY(); ++j) {
@@ -36,11 +39,13 @@ void removeBkg(TH1D *hin) {
 
 TH1D *sumRidge(TH2D *hin, TString name){
     TH1D *hout = new TH1D(name, "", hin->GetNbinsX(), hin->GetXaxis()->GetXmin(), hin->GetXaxis()->GetXmax()); 
-    TH1D *htmp1 = (TH1D*)hin->ProjectionX("htmp1", hin->GetYaxis()->FindBin(-11.0), hin->GetYaxis()->FindBin(-1.0));
-    TH1D *htmp2 = (TH1D*)hin->ProjectionX("htmp2", hin->GetYaxis()->FindBin(1.0), hin->GetYaxis()->FindBin(11.0)); 
+    TH1D *htmp1 = (TH1D*)hin->ProjectionX("htmp1", hin->GetYaxis()->FindBin(-7.0), hin->GetYaxis()->FindBin(-2.0));
+    TH1D *htmp2 = (TH1D*)hin->ProjectionX("htmp2", hin->GetYaxis()->FindBin(2.0), hin->GetYaxis()->FindBin(7.0)); 
     hout->Add(htmp1, htmp2);
+    delete htmp1;
+    delete htmp2;
     return hout;
-  }
+}
 
 TH1D *getY(TH1D *hSame, TH1D *hMix, TString name, double Ntrig) {
     TH1D *hout = new TH1D(name, "", hSame->GetNbinsX(), hSame->GetXaxis()->GetXmin(), hSame->GetXaxis()->GetXmax());
@@ -54,6 +59,8 @@ TH1D *getYFromHist(TH2D *hSame, TH2D *hMix, TString name, double Ntrig) {
     TH1D *hSameRidge = sumRidge(hSame, "same" + name);
     TH1D *hMixRidge = sumRidge(hMix, "mix" + name);
     TH1D *hY = getY(hSameRidge, hMixRidge, "Y" + name, Ntrig);
+    delete hSameRidge;
+    delete hMixRidge;
     return hY;
 }
 
@@ -66,10 +73,12 @@ double funTemplate(double *x, double *par) {
     double a4 = par[4];
     TF1 *funRidge = new TF1("funRidge", "[0]*(1 + 2*[1]*cos(x) + 2*[2]*cos(2*x) + 2*[3]*cos(3*x) + 2*[4]*cos(4*x))", -0.5*PI, 1.5*PI);
     funRidge->SetParameters(G, a1, a2, a3, a4);
-    return funRidge->Eval(dPhi);
+    double result = funRidge->Eval(dPhi);
+    delete funRidge;
+    return result;
 }
   
-void SavePlot(TH1D *hY, TString name) {
+void SavePlot(TH1D *hY, TString name, TString multiplicity) {
     TCanvas c0;
     hY->Draw();
     double par[5];
@@ -86,24 +95,27 @@ void SavePlot(TH1D *hY, TString name) {
     text->DrawLatexNDC(0.25, 0.70, Form("a3=%f", par[3]));
     text->DrawLatexNDC(0.25, 0.65, Form("a4=%f", par[4]));
     text->DrawLatexNDC(0.25, 0.60, Form("chi2=%.2f, ndf=%d", chi2, ndf));
-    c0.SaveAs("test_figure/dphi_template_" + name + ".png");
+    c0.SaveAs(Form("test_figure/dphi_template_%s_%s.png", multiplicity.Data(), name.Data()));
+    delete text;
 }
 
-double getAn(TH1D *hY, double &a1, double &a2, double &a3, double &a4, double &G, double &chi2, int &ndf, double &a2err) {
+double getAn(TH1D *hY, double &a1, double &a2, double &a3, double &a4, double &G, double &chi2, int &ndf, double &a2err, TString name, TString multiplicity) {
     gYIntegral = hY->Integral("width");
-    TF1 *fitFun = new TF1("fitFun", funTemplate, -0.5 * PI, 1.5 * PI, 4); // 参数数量改为4
-    fitFun->SetParameters(0.1,0.1, 0.1, 0.1, 0.1); // 初始化a1-a4
-    hY->Fit("fitFun");
+    TF1 *fitFun = new TF1("fitFun", funTemplate, -0.5 * PI, 1.5 * PI, 5);
+    fitFun->SetParameters(0.1, 0.1, 0.1, 0.1, 0.1);
+    hY->Fit("fitFun", "Q");
     a1 = fitFun->GetParameter(1);
     a2 = fitFun->GetParameter(2);
     a3 = fitFun->GetParameter(3);
     a4 = fitFun->GetParameter(4);
-    a2err=fitFun->GetParError(2);
-    G = gYIntegral / (2.0 * PI); // 计算最终的G值
+    a2err = fitFun->GetParError(2);
+    G = gYIntegral / (2.0 * PI);
     chi2 = fitFun->GetChisquare();
     ndf = fitFun->GetNDF();
-    SavePlot(hY, hY->GetName());
-    return fitFun->GetParameter(2);
+    SavePlot(hY, name, multiplicity);
+    double result = fitFun->GetParameter(2);
+    delete fitFun;
+    return result;
 }
 
 void drawProjection(TH2D *h2D, TString name) {
@@ -116,12 +128,15 @@ void SaveSumRidgePlots(TH1D *hSumRidge, TString name) {
     TCanvas c;
     hSumRidge->Draw();
     c.SaveAs(Form("sumridge_plots/%s.png", name.Data()));
-  }  
+}  
 
 void calc_flow_ancn_longRange() {
     TFile *file_1 = new TFile("hist_ampt_normal_1.5mb_Decorr_yuhao.root");
     TFile *file_2 = new TFile("hist_ampt_normal_1.5mb_Decorr_yuhao.root");
 
+    // 创建输出文件，提前打开以便保存每个eta bin的结果
+    TFile *outfile = new TFile("longRange_flow.root", "RECREATE");
+    
     TH1D *hYHigh = nullptr;
     TH1D *hYLow = nullptr;
 
@@ -130,9 +145,9 @@ void calc_flow_ancn_longRange() {
     double a1_low, a2_low, a3_low, a4_low;
     double chi2_high, chi2_low;
     int ndf_high, ndf_low;
-    double totalChargedParticleslow,totalChargedParticleshigh;
-    double nEventslow,nEventshigh;
-    double averageNThigh,averageNTlow;
+    double totalChargedParticleslow = 0, totalChargedParticleshigh = 0;
+    double nEventslow = 0, nEventshigh = 0;
+    double averageNThigh, averageNTlow;
 
     TH1D *hTrigPtLow = (TH1D *)file_1->Get("hTrigPtLow");
     TH1D *hTrigPtHigh = (TH1D *)file_1->Get("hTrigPtHigh");
@@ -140,28 +155,24 @@ void calc_flow_ancn_longRange() {
     TH1D *chargedParticlesCount = (TH1D*)file_1->Get("hNChMid");
     double totalEvents = chargedParticlesCount->GetEntries();
     std::cout << "Total events in h2D: " << totalEvents << std::endl;
-    double totalChargedParticles = 0; // 加权总和
-    double nEvents = 0;  // 总的事件数
-    for (int bin = 1; bin <= 2000; bin++) {
-        double binCenter = chargedParticlesCount->GetXaxis()->GetBinCenter(bin); // 获取当前 bin 中心的 NT 值
-        if(binCenter<30&&binCenter>10){
-        double binContent = chargedParticlesCount->GetBinContent(bin);  // 获取当前 bin 的分布数量
-        totalChargedParticleslow += binCenter * binContent;  // 加权累加
-        nEventslow += binContent;  // 累加事件数
+    for (int bin = 1; bin <= chargedParticlesCount->GetNbinsX(); bin++) {
+        double binCenter = chargedParticlesCount->GetXaxis()->GetBinCenter(bin);
+        double binContent = chargedParticlesCount->GetBinContent(bin);
+        
+        if(binCenter < 30 && binCenter > 10){
+            totalChargedParticleslow += binCenter * binContent;
+            nEventslow += binContent;
         }
-        else if(binCenter>60){
-            double binContent = chargedParticlesCount->GetBinContent(bin);  // 获取当前 bin 的分布数量
-            totalChargedParticleshigh += binCenter * binContent;  // 加权累加
-            nEventshigh += binContent;  // 累加事件数
-            }
+        else if(binCenter > 60){
+            totalChargedParticleshigh += binCenter * binContent;
+            nEventshigh += binContent;
+        }
     }
-    averageNTlow = totalChargedParticleslow / nEventslow;  // 计算加权平均NT
-    cout<<"averageNTlow: "<<averageNTlow<<endl;
-    averageNThigh = totalChargedParticleshigh / nEventshigh;  // 计算加权平均NT
-    cout<<"averageNThigh: "<<averageNThigh<<endl;
-    // double M_low = hTrigPtLow->GetMean();
-    // double M = hTrigPtHigh->GetMean();
-    double k = averageNTlow / averageNThigh;
+    averageNTlow = nEventslow > 0 ? totalChargedParticleslow / nEventslow : 0;
+    std::cout << "averageNTlow: " << averageNTlow << std::endl;
+    averageNThigh = nEventshigh > 0 ? totalChargedParticleshigh / nEventshigh : 0;
+    std::cout << "averageNThigh: " << averageNThigh << std::endl;
+    double k = (nEventshigh > 0 && nEventslow > 0) ? averageNTlow / averageNThigh : 0;
     std::cout << "k = " << k << std::endl;
 
     TH3D *hDEtaDPhiTrigEtaSameEventHighMid = (TH3D *)file_1->Get("hDEtaDPhiTrigEtaSameEventHighMid");
@@ -176,29 +187,31 @@ void calc_flow_ancn_longRange() {
     double c2_Eta[50];
     double c2_Eta_err[50];
     double a2_Eta_high[50];
-    double a2_Eta_err[50];
-    double etaBinWidths[nEtaBins];
+    double a2_Eta_err_high[50];
+    double a2_Eta_low[50];
+    double a2_Eta_err_low[50];
+    double etaBinWidth = (etaMax - etaMin) / nEtaBins;  // 固定bin宽度
 
     for (int iEta = 0; iEta < nEtaBins; iEta++) {
-        double eta = etaMin + iEta * (etaMax - etaMin) / nEtaBins;
-        etaBinWidths[iEta] = (etaMax - etaMin) / nEtaBins;
+        double eta = etaMin + (iEta + 0.5) * etaBinWidth;  // bin中心位置
         etaValues[iEta] = eta;
-        // 计算对应的Z bin（从6开始）
-        int zBin = iEta + 6; // TH3D的Z bin索引从1开始，有效数据在6到55
+        int zBin = iEta + 6;
+        
         hDEtaDPhiTrigEtaSameEventHighMid->GetZaxis()->SetRange(zBin, zBin);
         hDEtaDPhiTrigEtaMixEventHighMid->GetZaxis()->SetRange(zBin, zBin);
         hDEtaDPhiTrigEtaSameEventLowMid->GetZaxis()->SetRange(zBin, zBin);
         hDEtaDPhiTrigEtaMixEventLowMid->GetZaxis()->SetRange(zBin, zBin);
+        
         TH2D *hsame_eta_high = (TH2D*)hDEtaDPhiTrigEtaSameEventHighMid->Project3D("yx");
         TH2D *hmix_eta_high = (TH2D*)hDEtaDPhiTrigEtaMixEventHighMid->Project3D("yx");
         TH2D *hsame_eta_low = (TH2D*)hDEtaDPhiTrigEtaSameEventLowMid->Project3D("yx");
         TH2D *hmix_eta_low = (TH2D*)hDEtaDPhiTrigEtaMixEventLowMid->Project3D("yx");
 
-        // 绘制投影图
         drawProjection(hsame_eta_high, Form("hsame_eta_high_eta%d", iEta));
         drawProjection(hmix_eta_high, Form("hmix_eta_high_eta%d", iEta));
         drawProjection(hsame_eta_low, Form("hsame_eta_low_eta%d", iEta));
         drawProjection(hmix_eta_low, Form("hmix_eta_low_eta%d", iEta));
+        
         TH1D *hsame_eta_high1D = sumRidge(hsame_eta_high, Form("hsame_eta_high_eta%d", iEta));
         SaveSumRidgePlots(hsame_eta_high1D, Form("hsame_eta_high_eta%d", iEta));
 
@@ -214,19 +227,40 @@ void calc_flow_ancn_longRange() {
         if (hsame_eta_high->GetEntries() > 0 && hmix_eta_high->GetEntries() > 0) {
             hYHigh = getYFromHist(hsame_eta_high, hmix_eta_high, Form("YHigh_eta%d", iEta), hTrigPtHigh->GetEntries());
             hYLow = getYFromHist(hsame_eta_low, hmix_eta_low, Form("YLow_eta%d", iEta), hTrigPtLow->GetEntries());
-            double a2higherr=0;
-            double a2lowerr=0;
-            double a2_high = getAn(hYHigh, a1_high, a2_high, a3_high, a4_high, G_high, chi2_high, ndf_high,a2higherr);
-            double a2_low = getAn(hYLow, a1_low, a2_low, a3_low, a4_low, G_low, chi2_low, ndf_low,a2lowerr);
-            cout<<"a2_high"<<a2_high<<endl;
-            cout<<"a2_low"<<a2_low<<endl;
+            
+            double a2higherr = 0, a2lowerr = 0;
+            double a2_high = getAn(hYHigh, a1_high, a2_high, a3_high, a4_high, G_high, chi2_high, ndf_high, a2higherr, Form("eta%d", iEta), "high");
+            double a2_low = getAn(hYLow, a1_low, a2_low, a3_low, a4_low, G_low, chi2_low, ndf_low, a2lowerr, Form("eta%d", iEta), "low");
+            
+            std::cout << "a2_high: " << a2_high << std::endl;
+            std::cout << "a2_low: " << a2_low << std::endl;
+            
             a2_Eta_high[iEta] = a2_high;
-            a2_Eta_err[iEta] = a2higherr;
+            a2_Eta_err_high[iEta] = a2higherr;
+            a2_Eta_low[iEta] = a2_low;
+            a2_Eta_err_low[iEta] = a2lowerr;
+            
             double c2 = a2_high - a2_low * k;
-            cout<<"c2"<<c2<<endl;
+            std::cout << "c2: " << c2 << std::endl;
             c2_Eta[iEta] = c2;
-            double c2_err = sqrt(pow(hYHigh->GetFunction("fitFun")->GetParError(1), 2) + pow(hYLow->GetFunction("fitFun")->GetParError(2) * k, 2));
+            
+            double c2_err = sqrt(a2higherr*a2higherr + (a2lowerr*k)*(a2lowerr*k));
             c2_Eta_err[iEta] = c2_err;
+        }
+
+        // 保存每个eta bin的直方图到输出文件
+        if (hYHigh) {
+            outfile->cd();
+            hYHigh->Write(Form("hYHigh_eta%d", iEta));
+            delete hYHigh;
+            hYHigh = nullptr;
+        }
+        
+        if (hYLow) {
+            outfile->cd();
+            hYLow->Write(Form("hYLow_eta%d", iEta));
+            delete hYLow;
+            hYLow = nullptr;
         }
 
         delete hsame_eta_high;
@@ -235,57 +269,115 @@ void calc_flow_ancn_longRange() {
         delete hmix_eta_low;
     }
 
-    TGraphErrors *gr_c2 = new TGraphErrors(nEtaBins, etaValues, c2_Eta, etaBinWidths, c2_Eta_err); // 如果你有误差值，可以传递误差数组
-    TGraphErrors *gr_a2_high = new TGraphErrors(nEtaBins, etaValues, a2_Eta_high, etaBinWidths, a2_Eta_err); // 高多重性下的 a2 和 eta 的关系
-    
-    int rebinFactor = 2; // 合并的bin数
+    // ==================== 修正重分组逻辑 ====================
+    int rebinFactor = 1;
     int newNEtaBins = nEtaBins / rebinFactor;
     double newEtaValues[newNEtaBins], newC2_Eta[newNEtaBins], newC2_Eta_err[newNEtaBins];
-    double newA2_Eta_high[newNEtaBins], newA2_Eta_err[newNEtaBins], newEtaBinWidths[newNEtaBins];
-    double deltaEta = (etaMax - etaMin) / nEtaBins;
+    double newA2_Eta_high[newNEtaBins], newA2_Eta_err_high[newNEtaBins];
+    double newA2_Eta_low[newNEtaBins], newA2_Eta_err_low[newNEtaBins];
+    
+    // 计算新的bin宽度和半宽
+    double newBinWidth = etaBinWidth * rebinFactor;
+    double newHalfWidth = newBinWidth / 2.0;
+    
+    // 创建横坐标误差数组（所有点相同）
+    double* xErrors = new double[newNEtaBins];
+    for (int i = 0; i < newNEtaBins; i++) {
+        xErrors[i] = newHalfWidth;
+    }
 
     for (int i = 0; i < newNEtaBins; i++) {
         int start = i * rebinFactor;
-        double sumC2 = 0, sumC2Err2 = 0, sumA2 = 0, sumA2Err2 = 0, sumEta = 0;
+        double sumC2 = 0, sumC2Err2 = 0;
+        double sumA2_high = 0, sumA2_high_Err2 = 0;
+        double sumA2_low = 0, sumA2_low_Err2 = 0;
+        double sumEta = 0;
+        
         for (int j = 0; j < rebinFactor; j++) {
             int idx = start + j;
             if (idx >= nEtaBins) break;
+            
             sumC2 += c2_Eta[idx];
-            sumC2Err2 += pow(c2_Eta_err[idx], 2);
-            sumA2 += a2_Eta_high[idx];
-            sumA2Err2 += pow(a2_Eta_err[idx], 2);
+            sumC2Err2 += c2_Eta_err[idx] * c2_Eta_err[idx];
+            
+            sumA2_high += a2_Eta_high[idx];
+            sumA2_high_Err2 += a2_Eta_err_high[idx] * a2_Eta_err_high[idx];
+            
+            sumA2_low += a2_Eta_low[idx];
+            sumA2_low_Err2 += a2_Eta_err_low[idx] * a2_Eta_err_low[idx];
+            
             sumEta += etaValues[idx];
         }
+        
+        // 计算平均值
         newC2_Eta[i] = sumC2 / rebinFactor;
+        newA2_Eta_high[i] = sumA2_high / rebinFactor;
+        newA2_Eta_low[i] = sumA2_low / rebinFactor;
+        
+        // 计算误差：误差平方和的平方根除以重分组因子
         newC2_Eta_err[i] = sqrt(sumC2Err2) / rebinFactor;
-        newA2_Eta_high[i] = sumA2 / rebinFactor;
-        newA2_Eta_err[i] = sqrt(sumA2Err2) / rebinFactor;
+        newA2_Eta_err_high[i] = sqrt(sumA2_high_Err2) / rebinFactor;
+        newA2_Eta_err_low[i] = sqrt(sumA2_low_Err2) / rebinFactor;
+        
+        // 新bin的中心位置：原始bin中心的平均值
         newEtaValues[i] = sumEta / rebinFactor;
-        newEtaBinWidths[i] = deltaEta * rebinFactor;
     }
 
-    // 使用合并后的数据创建新图形
-    TGraphErrors *gr_c2_rebinned = new TGraphErrors(newNEtaBins, newEtaValues, newC2_Eta, newEtaBinWidths, newC2_Eta_err);
-    TGraphErrors *gr_a2_high_rebinned = new TGraphErrors(newNEtaBins, newEtaValues, newA2_Eta_high, newEtaBinWidths, newA2_Eta_err);
-    TCanvas *c = new TCanvas("c", "c");
+    // ==================== 创建图形对象 ====================
+    // 使用横坐标误差数组
+    TGraphErrors *gr_c2_rebinned = new TGraphErrors(newNEtaBins, newEtaValues, newC2_Eta, xErrors, newC2_Eta_err);
+    TGraphErrors *gr_a2_high_rebinned = new TGraphErrors(newNEtaBins, newEtaValues, newA2_Eta_high, xErrors, newA2_Eta_err_high);
+    TGraphErrors *gr_a2_low_rebinned = new TGraphErrors(newNEtaBins, newEtaValues, newA2_Eta_low, xErrors, newA2_Eta_err_low);
+    
+    TCanvas *c = new TCanvas("c", "Long-range Flow Coefficients", 800, 600);
     c->cd();
-    gr_c2_rebinned->SetTitle("c_2 and a_2 vs Eta (Rebinned)");
-    gr_c2_rebinned->GetXaxis()->SetTitle("Eta");
-    gr_c2_rebinned->GetYaxis()->SetTitle("c_2 / a_2");
+    
+    // 设置图形属性
+    gr_c2_rebinned->SetTitle("Long-range Flow Coefficients vs #eta");
+    gr_c2_rebinned->GetXaxis()->SetTitle("#eta");
+    gr_c2_rebinned->GetYaxis()->SetTitle("Coefficient Value");
     gr_c2_rebinned->GetXaxis()->SetRangeUser(etaMin, etaMax);
-    gr_c2_rebinned->GetYaxis()->SetRangeUser(0.006, 0.012); // 调整范围
+    gr_c2_rebinned->GetYaxis()->SetRangeUser(0.0025, 0.01);
+    
+    gr_c2_rebinned->SetMarkerStyle(20);
     gr_c2_rebinned->SetMarkerColor(kRed);
     gr_c2_rebinned->SetLineColor(kRed);
     gr_c2_rebinned->Draw("AP");
-
+    
+    gr_a2_high_rebinned->SetMarkerStyle(21);
     gr_a2_high_rebinned->SetMarkerColor(kBlue);
     gr_a2_high_rebinned->SetLineColor(kBlue);
     gr_a2_high_rebinned->Draw("P SAME");
-
+    
+    gr_a2_low_rebinned->SetMarkerStyle(22);
+    gr_a2_low_rebinned->SetMarkerColor(kGreen+2);
+    gr_a2_low_rebinned->SetLineColor(kGreen+2);
+    gr_a2_low_rebinned->Draw("P SAME");
+    
+    TLegend *leg = new TLegend(0.7, 0.7, 0.9, 0.9);
+    leg->AddEntry(gr_c2_rebinned, "c_{2}", "p");
+    leg->AddEntry(gr_a2_high_rebinned, "a_{2}^{high}", "p");
+    leg->AddEntry(gr_a2_low_rebinned, "a_{2}^{low}", "p");
+    leg->SetBorderSize(0);
+    leg->SetFillStyle(0);
+    leg->Draw();
+    
     c->SaveAs("c2_and_a2_vs_eta_rebinned.png");
 
-    TFile *outfile = new TFile("longRange_flow.root", "recreate");
-    if (hYHigh) hYHigh->Write("hYHigh");
-    if (hYLow) hYLow->Write("hYLow");
+    // 保存最终结果到输出文件
+    outfile->cd();
+    gr_c2_rebinned->Write("gr_c2_rebinned");
+    gr_a2_high_rebinned->Write("gr_a2_high_rebinned");
+    gr_a2_low_rebinned->Write("gr_a2_low_rebinned");
+    
+    c->Write("c2_and_a2_vs_eta_rebinned");
+    
     outfile->Close();
+    
+    // 清理内存
+    delete c;
+    delete leg;
+    delete[] xErrors;  // 释放横坐标误差数组
+    delete file_1;
+    delete file_2;
 }

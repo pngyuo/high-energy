@@ -356,15 +356,54 @@ void processFile(TFile* file_1, TFile* file_2, TString fileLabel,
     }
 }
 
+void saveSingleFilePlot(TGraphErrors* gr_raw, TGraphErrors* gr_sub, 
+                       const TString& filename, const TString& label) {
+    TCanvas *cSingle = new TCanvas(Form("cSingle_%s", label.Data()), 
+                                  Form("Fn vs Nch - %s", label.Data()), 800, 600);
+    
+    gr_raw->Draw("AP");
+    gr_sub->Draw("P SAME");
+    
+    // 设置样式
+    gr_raw->SetMarkerStyle(20);
+    gr_raw->SetMarkerColor(kRed);
+    gr_raw->SetLineColor(kRed);
+    gr_sub->SetMarkerStyle(24);
+    gr_sub->SetMarkerColor(kRed);
+    gr_sub->SetLineColor(kRed);
+    
+    // 设置标题和坐标轴
+    gr_raw->SetTitle(Form("Long-range flow coefficients - %s", label.Data()));
+    gr_raw->GetXaxis()->SetTitle("N_{ch}");
+    gr_raw->GetYaxis()->SetTitle("F_{n}");
+    gr_raw->GetXaxis()->SetRangeUser(0, 150);
+    gr_raw->GetYaxis()->SetRangeUser(-0.05, 0.1);
+    
+    // 添加图例
+    TLegend *leg = new TLegend(0.15, 0.15, 0.35, 0.25);
+    leg->SetBorderSize(0);
+    leg->AddEntry(gr_raw, "f2^{raw}", "p");
+    leg->AddEntry(gr_sub, "f2^{sub}", "p");
+    leg->Draw();
+    
+    // 保存图像
+    cSingle->SaveAs(Form("%s_Fn_vs_Nch.png", filename.Data()));
+    
+    // 清理
+    delete leg;
+    delete cSingle;
+}
+
 void calc_flow_fn_longRange() {
     // Define the three files to process
-    TString fileNames[3] = {
+    TString fileNames[4] = {
         "hist_ampt_normal_1.5mb_Decorr_yuhao.root",
         "hist_ampt_normal_0.15mb_Decorr_yuhao.root", 
-        "hist_ampt_normal_1.5mb_a_0.8_b_0.4_Decorr_yuhao.root"
-    };
+        "hist_ampt_normal_1.5mb_a_0.8_b_0.4_Decorr_yuhao.root",
+        "hist_ampt_normal_0.15mb_a_0.8_b_0.4_Decorr_yuhao.root"
+      };
     
-    TString fileLabels[3] = {"1p5mb", "0p15mb", "1p5mb_a0p8_b0p4"};
+    TString fileLabels[4] = {"1p5mb", "0p15mb", "1p5mb_a0p8_b0p4","0p15mb_a0.8_b0.4"};
     
     const int N_cent = 8;
     double Nsel_cut[N_cent + 1] = {10, 30, 40, 50, 60, 80, 100, 120, 150};
@@ -378,13 +417,13 @@ void calc_flow_fn_longRange() {
     }
     
     // Arrays to store results for all three files
-    double cent_an_f2[3][N_cent], cent_cn_f2[3][N_cent];
-    double err_an_f2[3][N_cent], err_cn_f2[3][N_cent];
-    double cent_an_f3[3][N_cent], cent_cn_f3[3][N_cent];
-    double err_an_f3[3][N_cent], err_cn_f3[3][N_cent];
+    double cent_an_f2[4][N_cent], cent_cn_f2[4][N_cent];
+    double err_an_f2[4][N_cent], err_cn_f2[4][N_cent];
+    double cent_an_f3[4][N_cent], cent_cn_f3[4][N_cent];
+    double err_an_f3[4][N_cent], err_cn_f3[4][N_cent];
     
     // Process each file
-    for (int iFile = 0; iFile < 3; iFile++) {
+    for (int iFile = 0; iFile < 4; iFile++) {
         std::cout << "Processing file: " << fileNames[iFile] << std::endl;
         
         TFile *file_1 = new TFile(fileNames[iFile]);
@@ -400,18 +439,33 @@ void calc_flow_fn_longRange() {
         file_2->Close();
     }
     
+    // 创建每个文件的单独图表
+    TGraphErrors *gr_f2_raw[4], *gr_f2_sub[4];
+    
+    for (int iFile = 0; iFile < 4; iFile++) {
+        gr_f2_raw[iFile] = new TGraphErrors(N_cent-1, &Nsel_val[1], &cent_an_f2[iFile][1], &Nsel_bin_width[1], &err_an_f2[iFile][1]);
+        gr_f2_sub[iFile] = new TGraphErrors(N_cent-1, &Nsel_val[1], &cent_cn_f2[iFile][1], &Nsel_bin_width[1], &err_cn_f2[iFile][1]);
+        
+        // 保存单个文件的图表
+        TString legendLabel;
+        if (iFile == 0) legendLabel = "1.5mb";
+        else if (iFile == 1) legendLabel = "0.15mb";
+        else if (iFile == 2) legendLabel = "1.5mb a=0.8 b=0.4";
+        else legendLabel = "0.15mb a=0.8 b=0.4";
+        
+        saveSingleFilePlot(gr_f2_raw[iFile], gr_f2_sub[iFile], fileLabels[iFile], legendLabel);
+    }
+
     // Create combined plot
     TCanvas *cCombined = new TCanvas("cCombined", "Fn vs Nch - All Files", 1200, 800);
     
     // Define colors and markers for different files
-    Color_t colors[3] = {kRed, kBlue, kGreen+2};
-    Style_t markers_raw[3] = {20, 21, 22};
-    Style_t markers_sub[3] = {24, 25, 26};
-    
-    TGraphErrors *gr_f2_raw[3], *gr_f2_sub[3];
+    Color_t colors[4] = {kBlack,kRed, kBlue, kGreen+2};
+    Style_t markers_raw[4] = {20, 21, 22,22};
+    Style_t markers_sub[4] = {24, 25, 26,27};
     
     bool firstDraw = true;
-    for (int iFile = 2; iFile < 3; iFile++) {
+    for (int iFile = 0; iFile < 4; iFile++) {
         gr_f2_raw[iFile] = new TGraphErrors(N_cent-1, &Nsel_val[1], &cent_an_f2[iFile][1], &Nsel_bin_width[1], &err_an_f2[iFile][1]);
         gr_f2_sub[iFile] = new TGraphErrors(N_cent-1, &Nsel_val[1], &cent_cn_f2[iFile][1], &Nsel_bin_width[1], &err_cn_f2[iFile][1]);
         
@@ -443,11 +497,12 @@ void calc_flow_fn_longRange() {
     leg->SetBorderSize(0);
     leg->SetTextSize(0.03);
     
-    for (int iFile = 2; iFile < 3; iFile++) {
+    for (int iFile = 0; iFile < 4; iFile++) {
         TString legendLabel;
         if (iFile == 0) legendLabel = "1.5mb";
         else if (iFile == 1) legendLabel = "0.15mb";
-        else legendLabel = "1.5mb a=0.8 b=0.4";
+        else if (iFile == 2) legendLabel = "1.5mb a=0.8 b=0.4";
+        else legendLabel = "0.15mb a=0.8 b=0.4";
         
         leg->AddEntry(gr_f2_raw[iFile], Form("f2^{raw} %s", legendLabel.Data()), "p");
         leg->AddEntry(gr_f2_sub[iFile], Form("f2^{sub} %s", legendLabel.Data()), "p");
@@ -459,7 +514,7 @@ void calc_flow_fn_longRange() {
     // Save results to ROOT file
     TFile *outfile = new TFile("longRange_flow_combined.root", "recreate");
     
-    for (int iFile = 0; iFile < 3; iFile++) {
+    for (int iFile = 0; iFile < 4; iFile++) {
         gr_f2_raw[iFile]->Write(Form("gr_f2_raw_%s", fileLabels[iFile].Data()));
         gr_f2_sub[iFile]->Write(Form("gr_f2_sub_%s", fileLabels[iFile].Data()));
     }
@@ -467,7 +522,7 @@ void calc_flow_fn_longRange() {
     outfile->Close();
     
     // Clean up
-    for (int iFile = 0; iFile < 3; iFile++) {
+    for (int iFile = 0; iFile < 4; iFile++) {
         delete gr_f2_raw[iFile];
         delete gr_f2_sub[iFile];
     }
