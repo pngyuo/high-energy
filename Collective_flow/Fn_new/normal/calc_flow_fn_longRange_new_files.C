@@ -203,7 +203,7 @@ double getA3(TH1D *hY, double &a1, double &a2, double &a3, double &a4, double &G
     return a3;
 }
 
-// 绘制三个文件的rn比较图
+// 绘制四个文件的rn比较图
 void plotCombinedRn(const std::vector<TGraphErrors*>& graphs, const TString& name, 
                    const TString& title, const std::vector<TString>& labels) {
     TCanvas c("c", "c", 800, 600);
@@ -211,8 +211,8 @@ void plotCombinedRn(const std::vector<TGraphErrors*>& graphs, const TString& nam
     TLegend *leg = new TLegend(0.7, 0.7, 0.9, 0.9);
     
     bool first = true;
-    int colors[] = {kRed, kBlue, kGreen+2};
-    int markers[] = {20, 21, 22};
+    int colors[] = {kRed, kBlue, kGreen+2, kMagenta}; // 添加第四个颜色
+    int markers[] = {20, 21, 22, 23}; // 添加第四个标记
     
     for (int i = 0; i < graphs.size(); i++) {
         if (!graphs[i]) continue;
@@ -417,7 +417,7 @@ void processFile(const char* filename, const double* Nsel_val, const double* Nse
         
         // 存储an_f2图形用于后续合并
         if (an_f2_graphs.find(icent) == an_f2_graphs.end()) {
-            an_f2_graphs[icent] = std::vector<TGraphErrors*>(3, nullptr);
+            an_f2_graphs[icent] = std::vector<TGraphErrors*>(4, nullptr);
         }
         an_f2_graphs[icent][file_index] = (TGraphErrors*)gr_an_f2->Clone();
         
@@ -435,7 +435,7 @@ void processFile(const char* filename, const double* Nsel_val, const double* Nse
         
         // 存储cn_f2图形用于后续合并
         if (cn_f2_graphs.find(icent) == cn_f2_graphs.end()) {
-            cn_f2_graphs[icent] = std::vector<TGraphErrors*>(3, nullptr);
+            cn_f2_graphs[icent] = std::vector<TGraphErrors*>(4, nullptr);
         }
         cn_f2_graphs[icent][file_index] = (TGraphErrors*)gr_cn_f2->Clone();
         
@@ -460,7 +460,7 @@ void calc_flow_fn_longRange_new_files() {
         Nsel_bin_width[icent] = (Nsel_cut[icent + 1] - Nsel_cut[icent]) / 2.0;
     }
     
-    // 三个文件的数据存储
+    // 四个文件的数据存储
     double cent_an_f2_file1[N_cent], cent_cn_f2_file1[N_cent];
     double err_an_f2_file1[N_cent], err_cn_f2_file1[N_cent];
     
@@ -470,6 +470,9 @@ void calc_flow_fn_longRange_new_files() {
     double cent_an_f2_file3[N_cent], cent_cn_f2_file3[N_cent];
     double err_an_f2_file3[N_cent], err_cn_f2_file3[N_cent];
     
+    double cent_an_f2_file4[N_cent], cent_cn_f2_file4[N_cent];
+    double err_an_f2_file4[N_cent], err_cn_f2_file4[N_cent];
+    
     // 初始化数组
     for (int i = 0; i < N_cent; i++) {
         cent_an_f2_file1[i] = 0; cent_cn_f2_file1[i] = 0;
@@ -478,14 +481,17 @@ void calc_flow_fn_longRange_new_files() {
         err_an_f2_file2[i] = 0; err_cn_f2_file2[i] = 0;
         cent_an_f2_file3[i] = 0; cent_cn_f2_file3[i] = 0;
         err_an_f2_file3[i] = 0; err_cn_f2_file3[i] = 0;
+        cent_an_f2_file4[i] = 0; cent_cn_f2_file4[i] = 0;
+        err_an_f2_file4[i] = 0; err_cn_f2_file4[i] = 0;
     }
     
     // 存储文件名
     file_names.push_back("1.5mb");
     file_names.push_back("0.15mb");
     file_names.push_back("1.5mb a0.8 b0.4");
+    file_names.push_back("0.15mb a0.8 b0.4");
     
-    // 处理三个文件
+    // 处理四个文件
     std::cout << "Processing file 1: hist_ampt_normal_1.5mb_Decorr_yuhao.root" << std::endl;
     processFile("hist_ampt_normal_1.5mb_Decorr_yuhao.root", Nsel_val, Nsel_bin_width,
                cent_an_f2_file1, cent_cn_f2_file1, err_an_f2_file1, err_cn_f2_file1, 0);
@@ -497,7 +503,10 @@ void calc_flow_fn_longRange_new_files() {
     std::cout << "Processing file 3: hist_ampt_normal_1.5mb_a_0.8_b_0.4_Decorr_yuhao.root" << std::endl;
     processFile("hist_ampt_normal_1.5mb_a_0.8_b_0.4_Decorr_yuhao.root", Nsel_val, Nsel_bin_width,
                cent_an_f2_file3, cent_cn_f2_file3, err_an_f2_file3, err_cn_f2_file3, 2);
-
+               
+    std::cout << "Processing file 4: hist_ampt_normal_0.15mb_a_0.8_b_0.4_Decorr_yuhao.root" << std::endl;
+    processFile("hist_ampt_normal_0.15mb_a_0.8_b_0.4_Decorr_yuhao.root", Nsel_val, Nsel_bin_width,
+               cent_an_f2_file4, cent_cn_f2_file4, err_an_f2_file4, err_cn_f2_file4, 3);
     // 绘制合并的rn图形
     for (int icent = 1; icent < N_cent; icent++) {
         if (an_f2_graphs.find(icent) != an_f2_graphs.end()) {
@@ -516,89 +525,111 @@ void calc_flow_fn_longRange_new_files() {
     }
 
     // 创建并绘制综合图表
-    TCanvas *cCombined = new TCanvas("cCombined", "Fn vs Nch - Three Files Comparison", 1200, 800);
-    cCombined->SetLogy();
-    
-    // 创建六个图表对象（每个文件两条线）
-    TGraphErrors *gr_f2_raw_file1 = new TGraphErrors(N_cent, Nsel_val, cent_an_f2_file1, Nsel_bin_width, err_an_f2_file1);
-    TGraphErrors *gr_f2_sub_file1 = new TGraphErrors(N_cent, Nsel_val, cent_cn_f2_file1, Nsel_bin_width, err_cn_f2_file1);
-    
-    TGraphErrors *gr_f2_raw_file2 = new TGraphErrors(N_cent, Nsel_val, cent_an_f2_file2, Nsel_bin_width, err_an_f2_file2);
-    TGraphErrors *gr_f2_sub_file2 = new TGraphErrors(N_cent, Nsel_val, cent_cn_f2_file2, Nsel_bin_width, err_cn_f2_file2);
-    
-    TGraphErrors *gr_f2_raw_file3 = new TGraphErrors(N_cent, Nsel_val, cent_an_f2_file3, Nsel_bin_width, err_an_f2_file3);
-    TGraphErrors *gr_f2_sub_file3 = new TGraphErrors(N_cent, Nsel_val, cent_cn_f2_file3, Nsel_bin_width, err_cn_f2_file3);
+TCanvas *cCombined = new TCanvas("cCombined", "Fn vs Nch - Four Files Comparison", 1200, 800);
+cCombined->SetLogy();
 
-    // 设置样式 - File 1 (1.5mb)
-    gr_f2_raw_file1->SetMarkerStyle(20); gr_f2_raw_file1->SetMarkerColor(kRed); gr_f2_raw_file1->SetLineColor(kRed);
-    gr_f2_sub_file1->SetMarkerStyle(24); gr_f2_sub_file1->SetMarkerColor(kRed); gr_f2_sub_file1->SetLineColor(kRed);
-    
-    // 设置样式 - File 2 (0.15mb)
-    gr_f2_raw_file2->SetMarkerStyle(21); gr_f2_raw_file2->SetMarkerColor(kBlue); gr_f2_raw_file2->SetLineColor(kBlue);
-    gr_f2_sub_file2->SetMarkerStyle(25); gr_f2_sub_file2->SetMarkerColor(kBlue); gr_f2_sub_file2->SetLineColor(kBlue);
-    
-    // 设置样式 - File 3 (1.5mb_a_0.8_b_0.4)
-    gr_f2_raw_file3->SetMarkerStyle(22); gr_f2_raw_file3->SetMarkerColor(kGreen+2); gr_f2_raw_file3->SetLineColor(kGreen+2);
-    gr_f2_sub_file3->SetMarkerStyle(26); gr_f2_sub_file3->SetMarkerColor(kGreen+2); gr_f2_sub_file3->SetLineColor(kGreen+2);
+// 创建八个图表对象（每个文件两条线）
+TGraphErrors *gr_f2_raw_file1 = new TGraphErrors(N_cent, Nsel_val, cent_an_f2_file1, Nsel_bin_width, err_an_f2_file1);
+TGraphErrors *gr_f2_sub_file1 = new TGraphErrors(N_cent, Nsel_val, cent_cn_f2_file1, Nsel_bin_width, err_cn_f2_file1);
 
-    // 绘制所有图表
-    gr_f2_raw_file1->Draw("AP");
-    gr_f2_sub_file1->Draw("P SAME");
-    gr_f2_raw_file2->Draw("P SAME");
-    gr_f2_sub_file2->Draw("P SAME");
-    gr_f2_raw_file3->Draw("P SAME");
-    gr_f2_sub_file3->Draw("P SAME");
+TGraphErrors *gr_f2_raw_file2 = new TGraphErrors(N_cent, Nsel_val, cent_an_f2_file2, Nsel_bin_width, err_an_f2_file2);
+TGraphErrors *gr_f2_sub_file2 = new TGraphErrors(N_cent, Nsel_val, cent_cn_f2_file2, Nsel_bin_width, err_cn_f2_file2);
 
-    // 设置坐标轴标题和范围
-    gr_f2_raw_file1->GetXaxis()->SetTitle("N_{ch}");
-    gr_f2_raw_file1->GetYaxis()->SetTitle("F_{n}");
-    gr_f2_raw_file1->SetTitle("Long-range flow coefficients - Three Files Comparison");
-    gr_f2_raw_file1->GetYaxis()->SetRangeUser(-0.01, 0.8);
+TGraphErrors *gr_f2_raw_file3 = new TGraphErrors(N_cent, Nsel_val, cent_an_f2_file3, Nsel_bin_width, err_an_f2_file3);
+TGraphErrors *gr_f2_sub_file3 = new TGraphErrors(N_cent, Nsel_val, cent_cn_f2_file3, Nsel_bin_width, err_cn_f2_file3);
 
-    // 创建图例
-    TLegend *leg = new TLegend(0.15, 0.15, 0.4, 0.4);
-    leg->AddEntry(gr_f2_raw_file1, "f2^{raw} (1.5mb)", "p");
-    leg->AddEntry(gr_f2_sub_file1, "f2^{sub} (1.5mb)", "p");
-    leg->AddEntry(gr_f2_raw_file2, "f2^{raw} (0.15mb)", "p");
-    leg->AddEntry(gr_f2_sub_file2, "f2^{sub} (0.15mb)", "p");
-    leg->AddEntry(gr_f2_raw_file3, "f2^{raw} (1.5mb_a0.8_b0.4)", "p");
-    leg->AddEntry(gr_f2_sub_file3, "f2^{sub} (1.5mb_a0.8_b0.4)", "p");
-    leg->Draw();
+TGraphErrors *gr_f2_raw_file4 = new TGraphErrors(N_cent, Nsel_val, cent_an_f2_file4, Nsel_bin_width, err_an_f2_file4);
+TGraphErrors *gr_f2_sub_file4 = new TGraphErrors(N_cent, Nsel_val, cent_cn_f2_file4, Nsel_bin_width, err_cn_f2_file4);
 
-    // 保存图片
-    cCombined->SaveAs("Fn_vs_Nch_ThreeFiles.png");
+// 设置样式 - File 1 (1.5mb)
+gr_f2_raw_file1->SetMarkerStyle(20); gr_f2_raw_file1->SetMarkerColor(kRed); gr_f2_raw_file1->SetLineColor(kRed);
+gr_f2_sub_file1->SetMarkerStyle(24); gr_f2_sub_file1->SetMarkerColor(kRed); gr_f2_sub_file1->SetLineColor(kRed);
 
-    // 保存数据到ROOT文件
-    TFile *outfile = new TFile("longRange_flow_ThreeFiles.root", "recreate");
+// 设置样式 - File 2 (0.15mb)
+gr_f2_raw_file2->SetMarkerStyle(21); gr_f2_raw_file2->SetMarkerColor(kBlue); gr_f2_raw_file2->SetLineColor(kBlue);
+gr_f2_sub_file2->SetMarkerStyle(25); gr_f2_sub_file2->SetMarkerColor(kBlue); gr_f2_sub_file2->SetLineColor(kBlue);
+
+// 设置样式 - File 3 (1.5mb_a_0.8_b_0.4)
+gr_f2_raw_file3->SetMarkerStyle(22); gr_f2_raw_file3->SetMarkerColor(kGreen+2); gr_f2_raw_file3->SetLineColor(kGreen+2);
+gr_f2_sub_file3->SetMarkerStyle(26); gr_f2_sub_file3->SetMarkerColor(kGreen+2); gr_f2_sub_file3->SetLineColor(kGreen+2);
+
+// 设置样式 - File 4 (0.15mb_a_0.8_b_0.4)
+gr_f2_raw_file4->SetMarkerStyle(23); gr_f2_raw_file4->SetMarkerColor(kMagenta); gr_f2_raw_file4->SetLineColor(kMagenta);
+gr_f2_sub_file4->SetMarkerStyle(27); gr_f2_sub_file4->SetMarkerColor(kMagenta); gr_f2_sub_file4->SetLineColor(kMagenta);
+
+// 绘制所有图表
+gr_f2_raw_file1->Draw("AP");
+gr_f2_sub_file1->Draw("P SAME");
+gr_f2_raw_file2->Draw("P SAME");
+gr_f2_sub_file2->Draw("P SAME");
+gr_f2_raw_file3->Draw("P SAME");
+gr_f2_sub_file3->Draw("P SAME");
+gr_f2_raw_file4->Draw("P SAME");
+gr_f2_sub_file4->Draw("P SAME");
+
+// 设置坐标轴标题和范围
+gr_f2_raw_file1->GetXaxis()->SetTitle("N_{ch}");
+gr_f2_raw_file1->GetYaxis()->SetTitle("F_{n}");
+gr_f2_raw_file1->SetTitle("Long-range flow coefficients - Four Files Comparison");
+gr_f2_raw_file1->GetYaxis()->SetRangeUser(-0.01, 0.8);
+
+// 创建图例
+TLegend *leg = new TLegend(0.15, 0.15, 0.4, 0.5);
+leg->AddEntry(gr_f2_raw_file1, "f2^{raw} (1.5mb)", "p");
+leg->AddEntry(gr_f2_sub_file1, "f2^{sub} (1.5mb)", "p");
+leg->AddEntry(gr_f2_raw_file2, "f2^{raw} (0.15mb)", "p");
+leg->AddEntry(gr_f2_sub_file2, "f2^{sub} (0.15mb)", "p");
+leg->AddEntry(gr_f2_raw_file3, "f2^{raw} (1.5mb_a0.8_b0.4)", "p");
+leg->AddEntry(gr_f2_sub_file3, "f2^{sub} (1.5mb_a0.8_b0.4)", "p");
+leg->AddEntry(gr_f2_raw_file4, "f2^{raw} (0.15mb_a0.8_b0.4)", "p");
+leg->AddEntry(gr_f2_sub_file4, "f2^{sub} (0.15mb_a0.8_b0.4)", "p");
+leg->Draw();
+
+// 保存图片
+cCombined->SaveAs("Fn_vs_Nch_FourFiles.png");
+
+// 保存数据到ROOT文件
+TFile *outfile = new TFile("longRange_flow_FourFiles.root", "recreate");
+
+// File 1 数据
+gr_f2_raw_file1->Write("gr_f2_raw_1p5mb");
+gr_f2_sub_file1->Write("gr_f2_sub_1p5mb");
+
+// File 2 数据
+gr_f2_raw_file2->Write("gr_f2_raw_0p15mb");
+gr_f2_sub_file2->Write("gr_f2_sub_0p15mb");
+
+// File 3 数据
+gr_f2_raw_file3->Write("gr_f2_raw_1p5mb_a0p8_b0p4");
+gr_f2_sub_file3->Write("gr_f2_sub_1p5mb_a0p8_b0p4");
+
+// File 4 数据
+gr_f2_raw_file4->Write("gr_f2_raw_0p15mb_a0p8_b0p4");
+gr_f2_sub_file4->Write("gr_f2_sub_0p15mb_a0p8_b0p4");
+
+outfile->Close();
+
+std::cout << "Analysis completed. Results saved to:" << std::endl;
+std::cout << "  - Fn_vs_Nch_FourFiles.png" << std::endl;
+std::cout << "  - longRange_flow_FourFiles.root" << std::endl;
+std::cout << "  - rn_plots/ directory contains individual and combined r_n plots" << std::endl;
     
-    // File 1 数据
-    gr_f2_raw_file1->Write("gr_f2_raw_1p5mb");
-    gr_f2_sub_file1->Write("gr_f2_sub_1p5mb");
-    
-    // File 2 数据
-    gr_f2_raw_file2->Write("gr_f2_raw_0p15mb");
-    gr_f2_sub_file2->Write("gr_f2_sub_0p15mb");
-    
-    // File 3 数据
-    gr_f2_raw_file3->Write("gr_f2_raw_1p5mb_a0p8_b0p4");
-    gr_f2_sub_file3->Write("gr_f2_sub_1p5mb_a0p8_b0p4");
-    
-    outfile->Close();
-    
-    std::cout << "Analysis completed. Results saved to:" << std::endl;
-    std::cout << "  - Fn_vs_Nch_ThreeFiles.png" << std::endl;
-    std::cout << "  - longRange_flow_ThreeFiles.root" << std::endl;
-    std::cout << "  - rn_plots/ directory contains individual and combined r_n plots" << std::endl;
-    
-    // 清理内存
-    for (auto& pair : an_f2_graphs) {
-        for (auto graph : pair.second) {
-            if (graph) delete graph;
-        }
+// 清理内存
+for (auto& pair : an_f2_graphs) {
+    for (auto graph : pair.second) {
+        if (graph) delete graph;
     }
-    for (auto& pair : cn_f2_graphs) {
-        for (auto graph : pair.second) {
-            if (graph) delete graph;
-        }
+}
+for (auto& pair : cn_f2_graphs) {
+    for (auto graph : pair.second) {
+        if (graph) delete graph;
     }
+}
+
+// 删除图表对象
+delete gr_f2_raw_file1; delete gr_f2_sub_file1;
+delete gr_f2_raw_file2; delete gr_f2_sub_file2;
+delete gr_f2_raw_file3; delete gr_f2_sub_file3;
+delete gr_f2_raw_file4; delete gr_f2_sub_file4;
+delete cCombined;
 }
