@@ -79,7 +79,7 @@ double funTemplate(double *x, double *par) {
 }
   
 void SavePlot(TH1D *hY, TString name, TString multiplicity, TString fileLabel) {
-    //TCanvas c0;
+    TCanvas c0;
     hY->Draw();
     double par[5];
     for (int i = 0; i < 5; i++) {
@@ -95,23 +95,27 @@ void SavePlot(TH1D *hY, TString name, TString multiplicity, TString fileLabel) {
     text->DrawLatexNDC(0.25, 0.70, Form("a3=%f", par[3]));
     text->DrawLatexNDC(0.25, 0.65, Form("a4=%f", par[4]));
     text->DrawLatexNDC(0.25, 0.60, Form("chi2=%.2f, ndf=%d", chi2, ndf));
-    //c0.SaveAs(Form("test_figure/dphi_template_%s_%s_%s.png", multiplicity.Data(), name.Data(), fileLabel.Data()));
+    c0.SaveAs(Form("test_figure/dphi_template_%s_%s_%s.png", multiplicity.Data(), name.Data(), fileLabel.Data()));
     delete text;
 }
 
-double getAn(TH1D *hY, double &a1, double &a2, double &a3, double &a4, double &G, double &chi2, int &ndf, double &a2err, TString name, TString multiplicity, TString fileLabel) {
+double getAn(TH1D *hY, double &a1_out, double &a2_out, double &a3_out, double &a4_out, 
+             double &G_out, double &chi2_out, int &ndf_out, double &a2err_out, 
+             TString name, TString multiplicity, TString fileLabel) {
     gYIntegral = hY->Integral("width");
     TF1 *fitFun = new TF1("fitFun", funTemplate, -0.5 * PI, 1.5 * PI, 5);
     fitFun->SetParameters(100, -0.1, 0.01, 0.1, 0.1);
     hY->Fit("fitFun", "Q");
-    a1 = fitFun->GetParameter(1);
-    a2 = fitFun->GetParameter(2);
-    a3 = fitFun->GetParameter(3);
-    a4 = fitFun->GetParameter(4);
-    a2err = fitFun->GetParError(2);
-    G = gYIntegral / (2.0 * PI);
-    chi2 = fitFun->GetChisquare();
-    ndf = fitFun->GetNDF();
+    
+    a1_out = fitFun->GetParameter(1);
+    a2_out = fitFun->GetParameter(2);
+    a3_out = fitFun->GetParameter(3);
+    a4_out = fitFun->GetParameter(4);
+    a2err_out = fitFun->GetParError(2);
+    G_out = gYIntegral / (2.0 * PI);
+    chi2_out = fitFun->GetChisquare();
+    ndf_out = fitFun->GetNDF();
+    
     SavePlot(hY, name, multiplicity, fileLabel);
     double result = fitFun->GetParameter(2);
     delete fitFun;
@@ -133,11 +137,13 @@ void processFile(const char* fileName, const char* fileLabel, TFile* outfile,
     TH1D *hYHigh = nullptr;
     TH1D *hYLow = nullptr;
 
-    double G_high, G_low;
-    double a1_high, a2_high, a3_high, a4_high;
-    double a1_low, a2_low, a3_low, a4_low;
-    double chi2_high, chi2_low;
-    int ndf_high, ndf_low;
+    // 为每个eta bin分别定义变量，避免冲突
+    double G_high_temp, G_low_temp;
+    double a1_high_temp, a2_high_temp, a3_high_temp, a4_high_temp;
+    double a1_low_temp, a2_low_temp, a3_low_temp, a4_low_temp;
+    double chi2_high_temp, chi2_low_temp;
+    int ndf_high_temp, ndf_low_temp;
+    
     double totalChargedParticleslow = 0, totalChargedParticleshigh = 0;
     double nEventslow = 0, nEventshigh = 0;
     double averageNThigh, averageNTlow;
@@ -191,7 +197,9 @@ void processFile(const char* fileName, const char* fileLabel, TFile* outfile,
         etaBinHalfWidths[iEta] = binWidth / 2.0;
         etaValues[iEta] = eta;
         int zBinmin = 2*iEta + 6;
-        int zBinmax = 2*iEta + 7;
+        int zBinmax = 2*iEta + 8;
+        
+        std::cout << "Processing eta bin " << iEta << ", eta = " << eta << std::endl;
         
         hDEtaDPhiTrigEtaSameEventHighMid->GetZaxis()->SetRange(zBinmin, zBinmax);
         hDEtaDPhiTrigEtaMixEventHighMid->GetZaxis()->SetRange(zBinmin, zBinmax);
@@ -206,47 +214,61 @@ void processFile(const char* fileName, const char* fileLabel, TFile* outfile,
         TH2D *hTrigPtEtaLow = (TH2D *)file->Get("hTrigPtEtaLow");
         TH2D *hTrigPtEtaHigh = (TH2D *)file->Get("hTrigPtEtaHigh");
         int bin_eta = hTrigPtEtaHigh->GetYaxis()->FindBin(eta);
-        double Ntrig_high_bin = hTrigPtEtaHigh->Integral( 5, hTrigPtEtaHigh->GetXaxis()->GetNbins(),bin_eta, bin_eta);
-        double Ntrig_low_bin = hTrigPtEtaLow->Integral( 5, hTrigPtEtaLow->GetXaxis()->GetNbins(),bin_eta, bin_eta);
+        double Ntrig_high_bin = hTrigPtEtaHigh->Integral(5, hTrigPtEtaHigh->GetXaxis()->GetNbins(), bin_eta, bin_eta);
+        double Ntrig_low_bin = hTrigPtEtaLow->Integral(5, hTrigPtEtaLow->GetXaxis()->GetNbins(), bin_eta, bin_eta);
 
         if (hsame_eta_high->GetEntries() > 0 && hmix_eta_high->GetEntries() > 0) {
-            hYHigh = getYFromHist(hsame_eta_high, hmix_eta_high, Form("YHigh_eta%d_%s", iEta, fileLabel),10);
-            hYLow = getYFromHist(hsame_eta_low, hmix_eta_low, Form("YLow_eta%d_%s", iEta, fileLabel),10);
+            // 清理之前的直方图
+            if (hYHigh) delete hYHigh;
+            if (hYLow) delete hYLow;
             
-            double a2higherr = 0, a2lowerr = 0;
-            double a2_high = getAn(hYHigh, a1_high, a2_high, a3_high, a4_high, G_high, chi2_high, ndf_high, a2higherr, Form("eta%d", iEta), "high", fileLabel);
-            double a2_low = getAn(hYLow, a1_low, a2_low, a3_low, a4_low, G_low, chi2_low, ndf_low, a2lowerr, Form("eta%d", iEta), "low", fileLabel);
+            hYHigh = getYFromHist(hsame_eta_high, hmix_eta_high, Form("YHigh_eta%d_%s", iEta, fileLabel), 10);
+            hYLow = getYFromHist(hsame_eta_low, hmix_eta_low, Form("YLow_eta%d_%s", iEta, fileLabel), 10);
             
-            std::cout << "File " << fileLabel << " - a2_high: " << a2_high << std::endl;
-            std::cout << "File " << fileLabel << " - a2_low: " << a2_low << std::endl;
+            // 使用临时变量接收getAn的返回值
+            double a2higherr_temp = 0, a2lowerr_temp = 0;
             
-            a2_Eta_high[iEta] = a2_high;
-            a2_Eta_err_high[iEta] = a2higherr;
-            a2_Eta_low[iEta] = a2_low;
-            a2_Eta_err_low[iEta] = a2lowerr;
+            // 修正：使用不同的变量名避免冲突
+            double a2_result_high = getAn(hYHigh, a1_high_temp, a2_high_temp, a3_high_temp, a4_high_temp, 
+                                         G_high_temp, chi2_high_temp, ndf_high_temp, a2higherr_temp, 
+                                         Form("eta%d", iEta), "high", fileLabel);
             
-            double c2 = a2_high - a2_low * k;
-            std::cout << "File " << fileLabel << " - c2: " << c2 << std::endl;
+            double a2_result_low = getAn(hYLow, a1_low_temp, a2_low_temp, a3_low_temp, a4_low_temp, 
+                                        G_low_temp, chi2_low_temp, ndf_low_temp, a2lowerr_temp, 
+                                        Form("eta%d", iEta), "low", fileLabel);
+            
+            std::cout << "File " << fileLabel << " - Eta bin " << iEta << " (eta=" << eta << ")" << std::endl;
+            std::cout << "  a2_high: " << a2_result_high << std::endl;
+            std::cout << "  a2_low: " << a2_result_low << std::endl;
+            
+            // 将结果存储到数组中
+            a2_Eta_high[iEta] = a2_result_high;
+            a2_Eta_err_high[iEta] = a2higherr_temp;
+            a2_Eta_low[iEta] = a2_result_low;
+            a2_Eta_err_low[iEta] = a2lowerr_temp;
+            
+            double c2 = a2_result_high - a2_result_low * k;
+            std::cout << "  c2: " << c2 << std::endl;
             c2_Eta[iEta] = c2;
             
-            double c2_err = sqrt(a2higherr*a2higherr + (a2lowerr*k)*(a2lowerr*k));
+            double c2_err = sqrt(a2higherr_temp*a2higherr_temp + (a2lowerr_temp*k)*(a2lowerr_temp*k));
             c2_Eta_err[iEta] = c2_err;
         }
 
-        // 保存每个eta bin的直方图到输出文件
-        // if (hYHigh) {
-        //     outfile->cd();
-        //     hYHigh->Write(Form("hYHigh_eta%d_%s", iEta, fileLabel));
-        //     delete hYHigh;
-        //     hYHigh = nullptr;
-        // }
+                // 保存每个eta bin的直方图到输出文件
+        if (hYHigh) {
+            outfile->cd();
+            hYHigh->Write(Form("hYHigh_eta%d_%s", iEta, fileLabel));
+            delete hYHigh;
+            hYHigh = nullptr;
+        }
         
-        // if (hYLow) {
-        //     outfile->cd();
-        //     hYLow->Write(Form("hYLow_eta%d_%s", iEta, fileLabel));
-        //     delete hYLow;
-        //     hYLow = nullptr;
-        // }
+        if (hYLow) {
+            outfile->cd();
+            hYLow->Write(Form("hYLow_eta%d_%s", iEta, fileLabel));
+            delete hYLow;
+            hYLow = nullptr;
+        }
 
         delete hsame_eta_high;
         delete hmix_eta_high;
@@ -265,6 +287,10 @@ void processFile(const char* fileName, const char* fileLabel, TFile* outfile,
     (*gr_a2_high)->Write(Form("gr_a2_high_%s", fileLabel));
     (*gr_a2_low)->Write(Form("gr_a2_low_%s", fileLabel));
 
+    // 清理内存
+    if (hYHigh) delete hYHigh;
+    if (hYLow) delete hYLow;
+    
     file->Close();
     delete file;
 }
