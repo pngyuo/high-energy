@@ -1,0 +1,44 @@
+#/*************************************************************************
+#    > File Name: input.dat
+#    > Author: Liang Zheng
+#    > Mail: liangzhphy@gmail.com 
+#    > Created Time: Thu Sep 17 22:18:34 2020
+# ************************************************************************/
+
+Main:numberOfEvents = 1000
+#cut to veto events on Nfinal
+Main:triggerNcut = 100
+
+#beam configuration
+#asymmetry lab frame
+#Beams:frameType = 2
+#Beams:idA = 2212
+#Beams:idB = 1000822080
+#Beams:eA = 4000
+#Beams:eB = 1570
+
+#symmetry c.m.s frame
+Beams:frameType = 2
+#Beams:eCM = 13000
+Beams:idA = 2212
+Beams:idB = 2212 
+#Beams:idA = 1000822080
+#Beams:idB = 1000822080
+Beams:eA = 6500
+Beams:eB = 6500
+
+
+#HeavyIon:bWidth=0.01
+
+AMPT:xmu=2.265 #2.265 for 3mb, 3.203 for 1.5mb with alpha=0.33
+AMPT:alpha=0.33 #alpha to calc sigma_gg
+AMPT:ntmax=150
+AMPT:isoft=4
+AMPT:ICmode=1 #initial spatial condition, 1:overlap, 2:rapidity ordered
+
+Angantyr:bmax=1.0 #bmax allowed to generate for impact parameter
+#Angantyr:bmin=1.0 #bmax allowed to generate for impact parameter
+
+#PartonLevel:ISR = off
+#PartonLevel:FSR = off
+
