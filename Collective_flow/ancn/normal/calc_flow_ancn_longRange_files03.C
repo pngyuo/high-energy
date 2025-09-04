@@ -197,10 +197,12 @@ void processFile(const char* fileName, const char* fileLabel, TFile* outfile,
         etaBinHalfWidths[iEta] = binWidth / 2.0;
         etaValues[iEta] = eta;
         int zBinmin = 2*iEta+1;
-        int zBinmax = 2*iEta+3;
+        int zBinmax = 2*iEta+2;
         
         std::cout << "Processing eta bin " << iEta << ", eta = " << eta << std::endl;
-        
+        double zMin = hDEtaDPhiTrigEtaSameEventHighMid->GetZaxis()->GetBinLowEdge(zBinmin);
+        double zMax = hDEtaDPhiTrigEtaSameEventHighMid->GetZaxis()->GetBinUpEdge(zBinmax);
+        std::cout << "  Trigger eta range: " << zMin << " to " << zMax << std::endl;
         hDEtaDPhiTrigEtaSameEventHighMid->GetZaxis()->SetRange(zBinmin, zBinmax);
         hDEtaDPhiTrigEtaMixEventHighMid->GetZaxis()->SetRange(zBinmin, zBinmax);
         hDEtaDPhiTrigEtaSameEventLowMid->GetZaxis()->SetRange(zBinmin, zBinmax);

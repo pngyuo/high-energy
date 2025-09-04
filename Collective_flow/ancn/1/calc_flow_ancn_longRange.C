@@ -78,7 +78,7 @@ double funTemplate(double *x, double *par) {
     return result;
 }
   
-void SavePlot(TH1D *hY, TString name, TString multiplicity) {
+void SavePlot(TH1D *hY, TString name, TString multiplicity, TString fileLabel) {
     TCanvas c0;
     hY->Draw();
     double par[5];
@@ -95,64 +95,63 @@ void SavePlot(TH1D *hY, TString name, TString multiplicity) {
     text->DrawLatexNDC(0.25, 0.70, Form("a3=%f", par[3]));
     text->DrawLatexNDC(0.25, 0.65, Form("a4=%f", par[4]));
     text->DrawLatexNDC(0.25, 0.60, Form("chi2=%.2f, ndf=%d", chi2, ndf));
-    c0.SaveAs(Form("test_figure/dphi_template_%s_%s.png", multiplicity.Data(), name.Data()));
+    c0.SaveAs(Form("test_figure_03/dphi_template_%s_%s_%s.png", multiplicity.Data(), name.Data(), fileLabel.Data()));
     delete text;
 }
 
-double getAn(TH1D *hY, double &a1, double &a2, double &a3, double &a4, double &G, double &chi2, int &ndf, double &a2err, TString name, TString multiplicity) {
+double getAn(TH1D *hY, double &a1_out, double &a2_out, double &a3_out, double &a4_out, 
+             double &G_out, double &chi2_out, int &ndf_out, double &a2err_out, 
+             TString name, TString multiplicity, TString fileLabel) {
     gYIntegral = hY->Integral("width");
     TF1 *fitFun = new TF1("fitFun", funTemplate, -0.5 * PI, 1.5 * PI, 5);
-    fitFun->SetParameters(0.1, 0.1, 0.1, 0.1, 0.1);
+    fitFun->SetParameters(100, -0.1, 0.01, 0.1, 0.1);
     hY->Fit("fitFun", "Q");
-    a1 = fitFun->GetParameter(1);
-    a2 = fitFun->GetParameter(2);
-    a3 = fitFun->GetParameter(3);
-    a4 = fitFun->GetParameter(4);
-    a2err = fitFun->GetParError(2);
-    G = gYIntegral / (2.0 * PI);
-    chi2 = fitFun->GetChisquare();
-    ndf = fitFun->GetNDF();
-    SavePlot(hY, name, multiplicity);
+    
+    a1_out = fitFun->GetParameter(1);
+    a2_out = fitFun->GetParameter(2);
+    a3_out = fitFun->GetParameter(3);
+    a4_out = fitFun->GetParameter(4);
+    a2err_out = fitFun->GetParError(2);
+    G_out = gYIntegral / (2.0 * PI);
+    chi2_out = fitFun->GetChisquare();
+    ndf_out = fitFun->GetNDF();
+    
+    SavePlot(hY, name, multiplicity, fileLabel);
     double result = fitFun->GetParameter(2);
     delete fitFun;
     return result;
 }
 
-void drawProjection(TH2D *h2D, TString name) {
-    TCanvas c;
-    h2D->Draw("colz");
-    c.SaveAs("projections/" + name + ".png");
-}
-
-void SaveSumRidgePlots(TH1D *hSumRidge, TString name) {
-    TCanvas c;
-    hSumRidge->Draw();
-    c.SaveAs(Form("sumridge_plots/%s.png", name.Data()));
-}  
-
-void calc_flow_ancn_longRange() {
-    TFile *file_1 = new TFile("hist_outputallFSI_new.root");
-    TFile *file_2 = new TFile("hist_outputallFSI_new.root");
-
-    // 创建输出文件，提前打开以便保存每个eta bin的结果
-    TFile *outfile = new TFile("longRange_flow.root", "RECREATE");
+// 处理单个文件的函数
+void processFile(const char* fileName, const char* fileLabel, TFile* outfile, 
+                 TGraphErrors** gr_c2, TGraphErrors** gr_a2_high, TGraphErrors** gr_a2_low) {
     
+    std::cout << "Processing file: " << fileName << std::endl;
+    
+    TFile *file = new TFile(fileName);
+    if (!file || file->IsZombie()) {
+        std::cout << "Error opening file: " << fileName << std::endl;
+        return;
+    }
+
     TH1D *hYHigh = nullptr;
     TH1D *hYLow = nullptr;
 
-    double G_high, G_low;
-    double a1_high, a2_high, a3_high, a4_high;
-    double a1_low, a2_low, a3_low, a4_low;
-    double chi2_high, chi2_low;
-    int ndf_high, ndf_low;
+    // 为每个eta bin分别定义变量，避免冲突
+    double G_high_temp, G_low_temp;
+    double a1_high_temp, a2_high_temp, a3_high_temp, a4_high_temp;
+    double a1_low_temp, a2_low_temp, a3_low_temp, a4_low_temp;
+    double chi2_high_temp, chi2_low_temp;
+    int ndf_high_temp, ndf_low_temp;
+    
     double totalChargedParticleslow = 0, totalChargedParticleshigh = 0;
     double nEventslow = 0, nEventshigh = 0;
     double averageNThigh, averageNTlow;
 
-    TH1D *hTrigPtLow = (TH1D *)file_1->Get("hTrigPtLow");
-    TH1D *hTrigPtHigh = (TH1D *)file_1->Get("hTrigPtHigh");
-
-    TH1D *chargedParticlesCount = (TH1D*)file_1->Get("hNChMid");
+    TH1D *hTrigPtLow = (TH1D *)file->Get("hTrigPtLow");
+    TH1D *hTrigPtHigh = (TH1D *)file->Get("hTrigPtHigh");
+    
+    TH1D *chargedParticlesCount = (TH1D*)file->Get("hNChMid");
     double totalEvents = chargedParticlesCount->GetEntries();
     std::cout << "Total events in h2D: " << totalEvents << std::endl;
     for (int bin = 1; bin <= chargedParticlesCount->GetNbinsX(); bin++) {
@@ -175,90 +174,101 @@ void calc_flow_ancn_longRange() {
     double k = (nEventshigh > 0 && nEventslow > 0) ? averageNTlow / averageNThigh : 0;
     std::cout << "k = " << k << std::endl;
 
-    TH3D *hDEtaDPhiTrigEtaSameEventHighMid = (TH3D *)file_1->Get("hDEtaDPhiTrigEtaSameEventHighMid");
-    TH3D *hDEtaDPhiTrigEtaMixEventHighMid = (TH3D *)file_1->Get("hDEtaDPhiTrigEtaMixEventHighMid");
-    TH3D *hDEtaDPhiTrigEtaSameEventLowMid = (TH3D *)file_1->Get("hDEtaDPhiTrigEtaSameEventLowMid");
-    TH3D *hDEtaDPhiTrigEtaMixEventLowMid = (TH3D *)file_1->Get("hDEtaDPhiTrigEtaMixEventLowMid");
+    TH3D *hDEtaDPhiTrigEtaSameEventHighMid = (TH3D *)file->Get("hDEtaDPhiTrigEtaSameEventHighMid");
+    TH3D *hDEtaDPhiTrigEtaMixEventHighMid = (TH3D *)file->Get("hDEtaDPhiTrigEtaMixEventHighMid");
+    TH3D *hDEtaDPhiTrigEtaSameEventLowMid = (TH3D *)file->Get("hDEtaDPhiTrigEtaSameEventLowMid");
+    TH3D *hDEtaDPhiTrigEtaMixEventLowMid = (TH3D *)file->Get("hDEtaDPhiTrigEtaMixEventLowMid");
 
-    int nEtaBins = 50; 
-    double etaMin = -2.5;
-    double etaMax = 2.5;
+    int nEtaBins = 30; 
+    double etaMin = -3.0;
+    double etaMax = 3.0;
     double etaValues[nEtaBins];
-    double c2_Eta[50];
-    double c2_Eta_err[50];
-    double a2_Eta_high[50];
-    double a2_Eta_err_high[50];
-    double a2_Eta_low[50];
-    double a2_Eta_err_low[50];
-    double etaBinWidth = (etaMax - etaMin) / nEtaBins;  // 固定bin宽度
+    double c2_Eta[30];
+    double c2_Eta_err[30];
+    double a2_Eta_high[30];
+    double a2_Eta_err_high[30];
+    double a2_Eta_low[30];
+    double a2_Eta_err_low[30];
+    double etaBinHalfWidths[nEtaBins];
 
     for (int iEta = 0; iEta < nEtaBins; iEta++) {
-        double eta = etaMin + (iEta + 0.5) * etaBinWidth;  // bin中心位置
+        double eta = etaMin + (iEta + 0.5) * (etaMax - etaMin) / nEtaBins;
+        double binWidth = (etaMax - etaMin) / nEtaBins;
+        etaBinHalfWidths[iEta] = binWidth / 2.0;
         etaValues[iEta] = eta;
-        int zBin = iEta + 6;
-        
-        hDEtaDPhiTrigEtaSameEventHighMid->GetZaxis()->SetRange(zBin, zBin);
-        hDEtaDPhiTrigEtaMixEventHighMid->GetZaxis()->SetRange(zBin, zBin);
-        hDEtaDPhiTrigEtaSameEventLowMid->GetZaxis()->SetRange(zBin, zBin);
-        hDEtaDPhiTrigEtaMixEventLowMid->GetZaxis()->SetRange(zBin, zBin);
-        
+        int zBinmin = 2*iEta+11;
+        int zBinmax = 2*iEta+12;
+
+        std::cout << "Processing eta bin " << iEta << ", eta = " << eta << std::endl;
+        std::cout << "Trig eta range: [" << eta - binWidth/2 << ", " << eta + binWidth/2 << "]" << std::endl;
+        double zMin = hDEtaDPhiTrigEtaSameEventHighMid->GetZaxis()->GetBinLowEdge(zBinmin);
+        double zMax = hDEtaDPhiTrigEtaSameEventHighMid->GetZaxis()->GetBinUpEdge(zBinmax);
+        std::cout << "  Trigger eta range: " << zMin << " to " << zMax << std::endl;
+    
+        hDEtaDPhiTrigEtaSameEventHighMid->GetZaxis()->SetRange(zBinmin, zBinmax);
+        hDEtaDPhiTrigEtaMixEventHighMid->GetZaxis()->SetRange(zBinmin, zBinmax);
+        hDEtaDPhiTrigEtaSameEventLowMid->GetZaxis()->SetRange(zBinmin, zBinmax);
+        hDEtaDPhiTrigEtaMixEventLowMid->GetZaxis()->SetRange(zBinmin, zBinmax);
+
         TH2D *hsame_eta_high = (TH2D*)hDEtaDPhiTrigEtaSameEventHighMid->Project3D("yx");
         TH2D *hmix_eta_high = (TH2D*)hDEtaDPhiTrigEtaMixEventHighMid->Project3D("yx");
         TH2D *hsame_eta_low = (TH2D*)hDEtaDPhiTrigEtaSameEventLowMid->Project3D("yx");
         TH2D *hmix_eta_low = (TH2D*)hDEtaDPhiTrigEtaMixEventLowMid->Project3D("yx");
-
-        drawProjection(hsame_eta_high, Form("hsame_eta_high_eta%d", iEta));
-        drawProjection(hmix_eta_high, Form("hmix_eta_high_eta%d", iEta));
-        drawProjection(hsame_eta_low, Form("hsame_eta_low_eta%d", iEta));
-        drawProjection(hmix_eta_low, Form("hmix_eta_low_eta%d", iEta));
-        
-        TH1D *hsame_eta_high1D = sumRidge(hsame_eta_high, Form("hsame_eta_high_eta%d", iEta));
-        SaveSumRidgePlots(hsame_eta_high1D, Form("hsame_eta_high_eta%d", iEta));
-
-        TH1D *hmix_eta_high1D = sumRidge(hmix_eta_high, Form("hmix_eta_high_eta%d", iEta));
-        SaveSumRidgePlots(hmix_eta_high1D, Form("hmix_eta_high_eta%d", iEta));
-
-        TH1D *hsame_eta_low1D = sumRidge(hsame_eta_low, Form("hsame_eta_low_eta%d", iEta));
-        SaveSumRidgePlots(hsame_eta_low1D, Form("hsame_eta_low_eta%d", iEta));
-
-        TH1D *hmix_eta_low1D = sumRidge(hmix_eta_low, Form("hmix_eta_low_eta%d", iEta));
-        SaveSumRidgePlots(hmix_eta_low1D, Form("hmix_eta_low_eta%d", iEta));
+        TH2D *hTrigPtEtaLow = (TH2D *)file->Get("hTrigPtEtaLow");
+        TH2D *hTrigPtEtaHigh = (TH2D *)file->Get("hTrigPtEtaHigh");
+        int bin_eta = hTrigPtEtaHigh->GetYaxis()->FindBin(eta);
+        double Ntrig_high_bin = hTrigPtEtaHigh->Integral(5, hTrigPtEtaHigh->GetXaxis()->GetNbins(), bin_eta, bin_eta);
+        double Ntrig_low_bin = hTrigPtEtaLow->Integral(5, hTrigPtEtaLow->GetXaxis()->GetNbins(), bin_eta, bin_eta);
 
         if (hsame_eta_high->GetEntries() > 0 && hmix_eta_high->GetEntries() > 0) {
-            hYHigh = getYFromHist(hsame_eta_high, hmix_eta_high, Form("YHigh_eta%d", iEta), hTrigPtHigh->GetEntries());
-            hYLow = getYFromHist(hsame_eta_low, hmix_eta_low, Form("YLow_eta%d", iEta), hTrigPtLow->GetEntries());
+            // 清理之前的直方图
+            if (hYHigh) delete hYHigh;
+            if (hYLow) delete hYLow;
             
-            double a2higherr = 0, a2lowerr = 0;
-            double a2_high = getAn(hYHigh, a1_high, a2_high, a3_high, a4_high, G_high, chi2_high, ndf_high, a2higherr, Form("eta%d", iEta), "high");
-            double a2_low = getAn(hYLow, a1_low, a2_low, a3_low, a4_low, G_low, chi2_low, ndf_low, a2lowerr, Form("eta%d", iEta), "low");
+            hYHigh = getYFromHist(hsame_eta_high, hmix_eta_high, Form("YHigh_eta%d_%s", iEta, fileLabel), 10);
+            hYLow = getYFromHist(hsame_eta_low, hmix_eta_low, Form("YLow_eta%d_%s", iEta, fileLabel), 10);
             
-            std::cout << "a2_high: " << a2_high << std::endl;
-            std::cout << "a2_low: " << a2_low << std::endl;
+            // 使用临时变量接收getAn的返回值
+            double a2higherr_temp = 0, a2lowerr_temp = 0;
             
-            a2_Eta_high[iEta] = a2_high;
-            a2_Eta_err_high[iEta] = a2higherr;
-            a2_Eta_low[iEta] = a2_low;
-            a2_Eta_err_low[iEta] = a2lowerr;
+            // 修正：使用不同的变量名避免冲突
+            double a2_result_high = getAn(hYHigh, a1_high_temp, a2_high_temp, a3_high_temp, a4_high_temp, 
+                                         G_high_temp, chi2_high_temp, ndf_high_temp, a2higherr_temp, 
+                                         Form("eta%d", iEta), "high", fileLabel);
             
-            double c2 = a2_high - a2_low * k;
-            std::cout << "c2: " << c2 << std::endl;
+            double a2_result_low = getAn(hYLow, a1_low_temp, a2_low_temp, a3_low_temp, a4_low_temp, 
+                                        G_low_temp, chi2_low_temp, ndf_low_temp, a2lowerr_temp, 
+                                        Form("eta%d", iEta), "low", fileLabel);
+            
+            std::cout << "File " << fileLabel << " - Eta bin " << iEta << " (eta=" << eta << ")" << std::endl;
+            std::cout << "  a2_high: " << a2_result_high << std::endl;
+            std::cout << "  a2_low: " << a2_result_low << std::endl;
+            
+            // 将结果存储到数组中
+            a2_Eta_high[iEta] = a2_result_high;
+            a2_Eta_err_high[iEta] = a2higherr_temp;
+            a2_Eta_low[iEta] = a2_result_low;
+            a2_Eta_err_low[iEta] = a2lowerr_temp;
+            
+            double c2 = a2_result_high - a2_result_low * k;
+            std::cout << "  c2: " << c2 << std::endl;
             c2_Eta[iEta] = c2;
             
-            double c2_err = sqrt(a2higherr*a2higherr + (a2lowerr*k)*(a2lowerr*k));
+            double c2_err = sqrt(a2higherr_temp*a2higherr_temp + (a2lowerr_temp*k)*(a2lowerr_temp*k));
             c2_Eta_err[iEta] = c2_err;
         }
 
-        // 保存每个eta bin的直方图到输出文件
+                // 保存每个eta bin的直方图到输出文件
         if (hYHigh) {
             outfile->cd();
-            hYHigh->Write(Form("hYHigh_eta%d", iEta));
+            hYHigh->Write(Form("hYHigh_eta%d_%s", iEta, fileLabel));
             delete hYHigh;
             hYHigh = nullptr;
         }
         
         if (hYLow) {
             outfile->cd();
-            hYLow->Write(Form("hYLow_eta%d", iEta));
+            hYLow->Write(Form("hYLow_eta%d_%s", iEta, fileLabel));
             delete hYLow;
             hYLow = nullptr;
         }
@@ -269,115 +279,607 @@ void calc_flow_ancn_longRange() {
         delete hmix_eta_low;
     }
 
-    // ==================== 修正重分组逻辑 ====================
-    int rebinFactor = 2;
-    int newNEtaBins = nEtaBins / rebinFactor;
-    double newEtaValues[newNEtaBins], newC2_Eta[newNEtaBins], newC2_Eta_err[newNEtaBins];
-    double newA2_Eta_high[newNEtaBins], newA2_Eta_err_high[newNEtaBins];
-    double newA2_Eta_low[newNEtaBins], newA2_Eta_err_low[newNEtaBins];
-    
-    // 计算新的bin宽度和半宽
-    double newBinWidth = etaBinWidth * rebinFactor;
-    double newHalfWidth = newBinWidth / 2.0;
-    
-    // 创建横坐标误差数组（所有点相同）
-    double* xErrors = new double[newNEtaBins];
-    for (int i = 0; i < newNEtaBins; i++) {
-        xErrors[i] = newHalfWidth;
-    }
+    // 创建图形时使用半宽作为横坐标误差
+    *gr_c2 = new TGraphErrors(nEtaBins, etaValues, c2_Eta, etaBinHalfWidths, c2_Eta_err);
+    *gr_a2_high = new TGraphErrors(nEtaBins, etaValues, a2_Eta_high, etaBinHalfWidths, a2_Eta_err_high);
+    *gr_a2_low = new TGraphErrors(nEtaBins, etaValues, a2_Eta_low, etaBinHalfWidths, a2_Eta_err_low);
 
-    for (int i = 0; i < newNEtaBins; i++) {
-        int start = i * rebinFactor;
-        double sumC2 = 0, sumC2Err2 = 0;
-        double sumA2_high = 0, sumA2_high_Err2 = 0;
-        double sumA2_low = 0, sumA2_low_Err2 = 0;
-        double sumEta = 0;
+    // 保存单个文件的结果到输出文件
+    outfile->cd();
+    (*gr_c2)->Write(Form("gr_c2_%s", fileLabel));
+    (*gr_a2_high)->Write(Form("gr_a2_high_%s", fileLabel));
+    (*gr_a2_low)->Write(Form("gr_a2_low_%s", fileLabel));
+
+    // 清理内存
+    if (hYHigh) delete hYHigh;
+    if (hYLow) delete hYLow;
+    
+    file->Close();
+    delete file;
+}
+
+void calc_flow_ancn_longRange() {
+    // 文件列表
+    const char* fileNames[4] = {
+        "hist_outputallFSI_Nch.root",
+        "hist_ampt_normal_0.15mb_Decorr_yuhao.root", 
+        "hist_ampt_normal_1.5mb_a_0.8_b_0.4_Decorr_yuhao.root",
+        "hist_ampt_normal_0.15mb_a_0.8_b_0.4_Decorr_yuhao.root"
+    };
+    
+    const char* fileLabels[4] = {"normal_1.5mb", "normal_0.15mb", "normal_1.5mb_a08_b04","normal_0.15mb_a08_b04"};
+    const char* legendLabels[4] = {"normal 1.5mb", "normal 0.15mb", "normal 1.5mb a=0.8 b=0.4", "normal 0.15mb a=0.8 b=0.4"};
+    
+    // 创建输出文件
+    TFile *outfile = new TFile("longRange_flow_multifile.root", "RECREATE");
+    
+    // 存储三个文件的结果
+    TGraphErrors *gr_c2[4];
+    TGraphErrors *gr_a2_high[4];
+    TGraphErrors *gr_a2_low[4];
+    
+    // 处理三个文件
+    for (int iFile = 0; iFile < 1; iFile++) {
+        processFile(fileNames[iFile], fileLabels[iFile], outfile, 
+                   &gr_c2[iFile], &gr_a2_high[iFile], &gr_a2_low[iFile]);
+    }
+    
+    // 创建综合图表
+    // TCanvas *c = new TCanvas("c", "c", 1600, 800);
+    // c->Divide(4, 1); // 分为4个子画布
+    
+    // // 颜色和标记样式设置
+    int colors[4] = {kBlack,kRed, kBlue, kGreen+2};
+    int markerStyles[4] = {20, 21, 22,23};
+    
+    // // 子画布1: c2对比
+    // c->cd(1);
+    // gPad->SetLeftMargin(0.15);
+    // gPad->SetBottomMargin(0.15);
+    
+     bool firstDraw = true;
+    // for (int iFile = 0; iFile < 1; iFile++) {
+    //     if (gr_c2[iFile]) {
+    //         gr_c2[iFile]->SetTitle("c_{2} vs #eta");
+    //         gr_c2[iFile]->GetXaxis()->SetTitle("#eta");
+    //         gr_c2[iFile]->GetYaxis()->SetTitle("c_{2}");
+    //         gr_c2[iFile]->GetXaxis()->SetRangeUser(-3, 3);
+    //         gr_c2[iFile]->GetYaxis()->SetRangeUser(0.0025, 0.01);
+            
+    //         gr_c2[iFile]->SetMarkerStyle(markerStyles[iFile]);
+    //         gr_c2[iFile]->SetMarkerColor(colors[iFile]);
+    //         gr_c2[iFile]->SetLineColor(colors[iFile]);
+            
+    //         if (firstDraw) {
+    //             gr_c2[iFile]->Draw("AP");
+    //             firstDraw = false;
+    //         } else {
+    //             gr_c2[iFile]->Draw("P SAME");
+    //         }
+    //     }
+    // }
+    
+    // TLegend *leg1 = new TLegend(0.2, 0.7, 0.8, 0.9);
+    // for (int iFile = 0; iFile < 1; iFile++) {
+    //     if (gr_c2[iFile]) {
+    //         leg1->AddEntry(gr_c2[iFile], legendLabels[iFile], "p");
+    //     }
+    // }
+    // leg1->SetBorderSize(0);
+    // leg1->SetFillStyle(0);
+    // leg1->Draw();
+    
+    // // 子画布2: a2_high对比
+    // c->cd(2);
+    // gPad->SetLeftMargin(0.15);
+    // gPad->SetBottomMargin(0.15);
+    
+    // firstDraw = true;
+    // for (int iFile = 0; iFile < 1; iFile++) {
+    //     if (gr_a2_high[iFile]) {
+    //         gr_a2_high[iFile]->SetTitle("a_{2}^{high} vs #eta");
+    //         gr_a2_high[iFile]->GetXaxis()->SetTitle("#eta");
+    //         gr_a2_high[iFile]->GetYaxis()->SetTitle("a_{2}^{high}");
+    //         gr_a2_high[iFile]->GetXaxis()->SetRangeUser(-3, 3);
+            
+    //         gr_a2_high[iFile]->SetMarkerStyle(markerStyles[iFile]);
+    //         gr_a2_high[iFile]->SetMarkerColor(colors[iFile]);
+    //         gr_a2_high[iFile]->SetLineColor(colors[iFile]);
+            
+    //         if (firstDraw) {
+    //             gr_a2_high[iFile]->Draw("AP");
+    //             firstDraw = false;
+    //         } else {
+    //             gr_a2_high[iFile]->Draw("P SAME");
+    //         }
+    //     }
+    // }
+    
+    // TLegend *leg2 = new TLegend(0.2, 0.7, 0.8, 0.9);
+    // for (int iFile = 0; iFile < 1; iFile++) {
+    //     if (gr_a2_high[iFile]) {
+    //         leg2->AddEntry(gr_a2_high[iFile], legendLabels[iFile], "p");
+    //     }
+    // }
+    // leg2->SetBorderSize(0);
+    // leg2->SetFillStyle(0);
+    // leg2->Draw();
+    
+    // // 子画布3: a2_low对比
+    // c->cd(3);
+    // gPad->SetLeftMargin(0.15);
+    // gPad->SetBottomMargin(0.15);
+    
+    // firstDraw = true;
+    // for (int iFile = 0; iFile < 1; iFile++) {
+    //     if (gr_a2_low[iFile]) {
+    //         gr_a2_low[iFile]->SetTitle("a_{2}^{low} vs #eta");
+    //         gr_a2_low[iFile]->GetXaxis()->SetTitle("#eta");
+    //         gr_a2_low[iFile]->GetYaxis()->SetTitle("a_{2}^{low}");
+    //         gr_a2_low[iFile]->GetXaxis()->SetRangeUser(-3, 3);
+            
+    //         gr_a2_low[iFile]->SetMarkerStyle(markerStyles[iFile]);
+    //         gr_a2_low[iFile]->SetMarkerColor(colors[iFile]);
+    //         gr_a2_low[iFile]->SetLineColor(colors[iFile]);
+            
+    //         if (firstDraw) {
+    //             gr_a2_low[iFile]->Draw("AP");
+    //             firstDraw = false;
+    //         } else {
+    //             gr_a2_low[iFile]->Draw("P SAME");
+    //         }
+    //     }
+    // }
+    
+    // TLegend *leg3 = new TLegend(0.2, 0.7, 0.8, 0.9);
+    // for (int iFile = 0; iFile < 1; iFile++) {
+    //     if (gr_a2_low[iFile]) {
+    //         leg3->AddEntry(gr_a2_low[iFile], legendLabels[iFile], "p");
+    //     }
+    // }
+    // leg3->SetBorderSize(0);
+    // leg3->SetFillStyle(0);
+    // leg3->Draw();
+    
+    // // 子画布4: 所有系数在一起显示（9条线）
+    // c->cd(4);
+    // gPad->SetLeftMargin(0.15);
+    // gPad->SetBottomMargin(0.15);
+    
+    // // 线型设置：实线、虚线、点线
+    // int lineStyles[3] = {1, 2, 3}; // 实线、虚线、点线
+    // int fillStyles[3] = {1001, 0, 0}; // 实心、空心、空心
+    
+    // firstDraw = true;
+    // double yMin = 1e10, yMax = -1e10;
+    
+    // // 先找到y轴范围
+    // for (int iFile = 0; iFile < 1; iFile++) {
+    //     if (gr_c2[iFile]) {
+    //         for (int i = 0; i < gr_c2[iFile]->GetN(); i++) {
+    //             double x, y;
+    //             gr_c2[iFile]->GetPoint(i, x, y);
+    //             if (y < yMin) yMin = y;
+    //             if (y > yMax) yMax = y;
+    //         }
+    //     }
+    //     if (gr_a2_high[iFile]) {
+    //         for (int i = 0; i < gr_a2_high[iFile]->GetN(); i++) {
+    //             double x, y;
+    //             gr_a2_high[iFile]->GetPoint(i, x, y);
+    //             if (y < yMin) yMin = y;
+    //             if (y > yMax) yMax = y;
+    //         }
+    //     }
+    //     if (gr_a2_low[iFile]) {
+    //         for (int i = 0; i < gr_a2_low[iFile]->GetN(); i++) {
+    //             double x, y;
+    //             gr_a2_low[iFile]->GetPoint(i, x, y);
+    //             if (y < yMin) yMin = y;
+    //             if (y > yMax) yMax = y;
+    //         }
+    //     }
+    // }
+    
+    // // 画c2
+    // for (int iFile = 0; iFile < 1; iFile++) {
+    //     if (gr_c2[iFile]) {
+    //         gr_c2[iFile]->SetTitle("Flow Coefficients vs #eta");
+    //         gr_c2[iFile]->GetXaxis()->SetTitle("#eta");
+    //         gr_c2[iFile]->GetYaxis()->SetTitle("Coefficient value");
+    //         gr_c2[iFile]->GetXaxis()->SetRangeUser(-3, 3);
+    //         gr_c2[iFile]->GetYaxis()->SetRangeUser(yMin*0.8, yMax*1.2);
+            
+    //         gr_c2[iFile]->SetMarkerStyle(markerStyles[iFile]);
+    //         gr_c2[iFile]->SetMarkerColor(colors[iFile]);
+    //         gr_c2[iFile]->SetLineColor(colors[iFile]);
+    //         gr_c2[iFile]->SetLineStyle(lineStyles[iFile]);
+    //         gr_c2[iFile]->SetFillStyle(fillStyles[iFile]);
+            
+    //         if (firstDraw) {
+    //             gr_c2[iFile]->Draw("AP");
+    //             firstDraw = false;
+    //         } else {
+    //             gr_c2[iFile]->Draw("PL SAME");
+    //         }
+    //     }
+    // }
+    
+    // // 画a2_high
+    // for (int iFile = 0; iFile < 1; iFile++) {
+    //     if (gr_a2_high[iFile]) {
+    //         // 使用更深的颜色变体
+    //         int darkColors[3] = {kRed+2, kBlue+2, kGreen+4};
+            
+    //         gr_a2_high[iFile]->SetMarkerStyle(markerStyles[iFile]);
+    //         gr_a2_high[iFile]->SetMarkerColor(darkColors[iFile]);
+    //         gr_a2_high[iFile]->SetLineColor(darkColors[iFile]);
+    //         gr_a2_high[iFile]->SetLineStyle(lineStyles[iFile]);
+    //         gr_a2_high[iFile]->SetFillStyle(fillStyles[iFile]);
+            
+    //         gr_a2_high[iFile]->Draw("P SAME");
+    //     }
+    // }
+    
+    // // 画a2_low
+    // for (int iFile = 0; iFile < 1; iFile++) {
+    //     if (gr_a2_low[iFile]) {
+    //         // 使用更浅的颜色变体
+    //         int lightColors[3] = {kRed-7, kBlue-7, kGreen-7};
+            
+    //         gr_a2_low[iFile]->SetMarkerStyle(markerStyles[iFile]);
+    //         gr_a2_low[iFile]->SetMarkerColor(lightColors[iFile]);
+    //         gr_a2_low[iFile]->SetLineColor(lightColors[iFile]);
+    //         gr_a2_low[iFile]->SetLineStyle(lineStyles[iFile]);
+    //         gr_a2_low[iFile]->SetFillStyle(fillStyles[iFile]);
+            
+    //         gr_a2_low[iFile]->Draw("P SAME");
+    //     }
+    // }
+    
+    // // 创建综合图例
+    // TLegend *leg4 = new TLegend(0.15, 0.75, 0.85, 0.95);
+    // leg4->SetNColumns(3); // 3列显示
+    
+    // for (int iFile = 0; iFile < 1; iFile++) {
+    //     if (gr_c2[iFile]) {
+    //         leg4->AddEntry(gr_c2[iFile], Form("c_{2} %s", legendLabels[iFile]), "p");
+    //     }
+    // }
+    // for (int iFile = 0; iFile < 1; iFile++) {
+    //     if (gr_a2_high[iFile]) {
+    //         int darkColors[3] = {kRed+2, kBlue+2, kGreen+4};
+    //         gr_a2_high[iFile]->SetLineColor(darkColors[iFile]); // 确保图例颜色正确
+    //         leg4->AddEntry(gr_a2_high[iFile], Form("a_{2}^{high} %s", legendLabels[iFile]), "p");
+    //     }
+    // }
+    // for (int iFile = 0; iFile < 1; iFile++) {
+    //     if (gr_a2_low[iFile]) {
+    //         int lightColors[3] = {kRed-7, kBlue-7, kGreen-7};
+    //         gr_a2_low[iFile]->SetLineColor(lightColors[iFile]); // 确保图例颜色正确
+    //         leg4->AddEntry(gr_a2_low[iFile], Form("a_{2}^{low} %s", legendLabels[iFile]), "p");
+    //     }
+    // }
+    
+    // leg4->SetBorderSize(0);
+    // leg4->SetFillStyle(0);
+    // leg4->SetTextSize(0.025); // 调小字体以适应更多条目
+    // leg4->Draw();
+    
+    // c->SaveAs("c2_and_a2_vs_eta_multifile_comparison.png");
+    
+    // 保存每个子画布为单独的文件
+// 子画布1 - c2对比
+TCanvas *c1_individual = new TCanvas("c1_individual", "c2 vs eta", 800, 600);
+c1_individual->cd();
+gPad->SetLeftMargin(0.15);
+gPad->SetBottomMargin(0.15);
+
+firstDraw = true;
+for (int iFile = 0; iFile < 1; iFile++) {
+    if (gr_c2[iFile]) {
+        gr_c2[iFile]->SetTitle("c_{2} vs #eta");
+        gr_c2[iFile]->GetXaxis()->SetTitle("#eta");
+        gr_c2[iFile]->GetYaxis()->SetTitle("c_{2}");
+        gr_c2[iFile]->GetXaxis()->SetRangeUser(-3, 3);
+        gr_c2[iFile]->GetYaxis()->SetRangeUser(0.0025, 0.01);
         
-        for (int j = 0; j < rebinFactor; j++) {
-            int idx = start + j;
-            if (idx >= nEtaBins) break;
-            
-            sumC2 += c2_Eta[idx];
-            sumC2Err2 += c2_Eta_err[idx] * c2_Eta_err[idx];
-            
-            sumA2_high += a2_Eta_high[idx];
-            sumA2_high_Err2 += a2_Eta_err_high[idx] * a2_Eta_err_high[idx];
-            
-            sumA2_low += a2_Eta_low[idx];
-            sumA2_low_Err2 += a2_Eta_err_low[idx] * a2_Eta_err_low[idx];
-            
-            sumEta += etaValues[idx];
+        // 添加颜色和标记样式设置
+        gr_c2[iFile]->SetMarkerStyle(markerStyles[iFile]);
+        gr_c2[iFile]->SetMarkerColor(colors[iFile]);
+        gr_c2[iFile]->SetLineColor(colors[iFile]);
+        
+        if (firstDraw) {
+            gr_c2[iFile]->Draw("AP");
+            firstDraw = false;
+        } else {
+            gr_c2[iFile]->Draw("P SAME");
         }
-        
-        // 计算平均值
-        newC2_Eta[i] = sumC2 / rebinFactor;
-        newA2_Eta_high[i] = sumA2_high / rebinFactor;
-        newA2_Eta_low[i] = sumA2_low / rebinFactor;
-        
-        // 计算误差：误差平方和的平方根除以重分组因子
-        newC2_Eta_err[i] = sqrt(sumC2Err2) / rebinFactor;
-        newA2_Eta_err_high[i] = sqrt(sumA2_high_Err2) / rebinFactor;
-        newA2_Eta_err_low[i] = sqrt(sumA2_low_Err2) / rebinFactor;
-        
-        // 新bin的中心位置：原始bin中心的平均值
-        newEtaValues[i] = sumEta / rebinFactor;
     }
+}
 
-    // ==================== 创建图形对象 ====================
-    // 使用横坐标误差数组
-    TGraphErrors *gr_c2_rebinned = new TGraphErrors(newNEtaBins, newEtaValues, newC2_Eta, xErrors, newC2_Eta_err);
-    TGraphErrors *gr_a2_high_rebinned = new TGraphErrors(newNEtaBins, newEtaValues, newA2_Eta_high, xErrors, newA2_Eta_err_high);
-    TGraphErrors *gr_a2_low_rebinned = new TGraphErrors(newNEtaBins, newEtaValues, newA2_Eta_low, xErrors, newA2_Eta_err_low);
-    
-    TCanvas *c = new TCanvas("c", "Long-range Flow Coefficients", 800, 600);
-    c->cd();
-    
-    // 设置图形属性
-    gr_c2_rebinned->SetTitle("Long-range Flow Coefficients vs #eta");
-    gr_c2_rebinned->GetXaxis()->SetTitle("#eta");
-    gr_c2_rebinned->GetYaxis()->SetTitle("Coefficient Value");
-    gr_c2_rebinned->GetXaxis()->SetRangeUser(etaMin, etaMax);
-    gr_c2_rebinned->GetYaxis()->SetRangeUser(0.000, 0.008);
-    
-    gr_c2_rebinned->SetMarkerStyle(20);
-    gr_c2_rebinned->SetMarkerColor(kRed);
-    gr_c2_rebinned->SetLineColor(kRed);
-    gr_c2_rebinned->Draw("AP");
-    
-    gr_a2_high_rebinned->SetMarkerStyle(21);
-    gr_a2_high_rebinned->SetMarkerColor(kBlue);
-    gr_a2_high_rebinned->SetLineColor(kBlue);
-    gr_a2_high_rebinned->Draw("P SAME");
-    
-    gr_a2_low_rebinned->SetMarkerStyle(22);
-    gr_a2_low_rebinned->SetMarkerColor(kGreen+2);
-    gr_a2_low_rebinned->SetLineColor(kGreen+2);
-    gr_a2_low_rebinned->Draw("P SAME");
-    
-    TLegend *leg = new TLegend(0.7, 0.7, 0.9, 0.9);
-    leg->AddEntry(gr_c2_rebinned, "c_{2}", "p");
-    leg->AddEntry(gr_a2_high_rebinned, "a_{2}^{high}", "p");
-    leg->AddEntry(gr_a2_low_rebinned, "a_{2}^{low}", "p");
-    leg->SetBorderSize(0);
-    leg->SetFillStyle(0);
-    leg->Draw();
-    
-    c->SaveAs("c2_and_a2_vs_eta_rebinned.png");
+TLegend *leg1_copy = new TLegend(0.2, 0.7, 0.8, 0.9);
+for (int iFile = 0; iFile < 1; iFile++) {
+    if (gr_c2[iFile]) {
+        leg1_copy->AddEntry(gr_c2[iFile], legendLabels[iFile], "p");
+    }
+}
+leg1_copy->SetBorderSize(0);
+leg1_copy->SetFillStyle(0);
+leg1_copy->Draw();
+c1_individual->SaveAs("subplot1_c2_vs_eta03.png");
 
+// 子画布2 - a2_high对比
+TCanvas *c2_individual = new TCanvas("c2_individual", "a2_high vs eta", 800, 600);
+c2_individual->cd();
+gPad->SetLeftMargin(0.15);
+gPad->SetBottomMargin(0.15);
+
+firstDraw = true;
+for (int iFile = 0; iFile < 1; iFile++) {
+    if (gr_a2_high[iFile]) {
+        gr_a2_high[iFile]->SetTitle("a_{2}^{high} vs #eta");
+        gr_a2_high[iFile]->GetXaxis()->SetTitle("#eta");
+        gr_a2_high[iFile]->GetYaxis()->SetTitle("a_{2}^{high}");
+        gr_a2_high[iFile]->GetXaxis()->SetRangeUser(-3, 3);
+        gr_a2_high[iFile]->GetYaxis()->SetRangeUser(0.0015, 0.012);
+        
+        // 添加颜色和标记样式设置
+        gr_a2_high[iFile]->SetMarkerStyle(markerStyles[iFile]);
+        gr_a2_high[iFile]->SetMarkerColor(colors[iFile]);
+        gr_a2_high[iFile]->SetLineColor(colors[iFile]);
+        
+        if (firstDraw) {
+            gr_a2_high[iFile]->Draw("AP");
+            firstDraw = false;
+        } else {
+            gr_a2_high[iFile]->Draw("P SAME");
+        }
+    }
+}
+
+TLegend *leg2_copy = new TLegend(0.2, 0.7, 0.8, 0.9);
+for (int iFile = 0; iFile < 1; iFile++) {
+    if (gr_a2_high[iFile]) {
+        leg2_copy->AddEntry(gr_a2_high[iFile], legendLabels[iFile], "p");
+    }
+}
+leg2_copy->SetBorderSize(0);
+leg2_copy->SetFillStyle(0);
+leg2_copy->Draw();
+c2_individual->SaveAs("subplot2_a2_high_vs_eta03.png");
+
+// 子画布3 - a2_low对比
+TCanvas *c3_individual = new TCanvas("c3_individual", "a2_low vs eta", 800, 600);
+c3_individual->cd();
+gPad->SetLeftMargin(0.15);
+gPad->SetBottomMargin(0.15);
+
+firstDraw = true;
+for (int iFile = 0; iFile < 1; iFile++) {
+    if (gr_a2_low[iFile]) {
+        gr_a2_low[iFile]->SetTitle("a_{2}^{low} vs #eta");
+        gr_a2_low[iFile]->GetXaxis()->SetTitle("#eta");
+        gr_a2_low[iFile]->GetYaxis()->SetTitle("a_{2}^{low}");
+        gr_a2_low[iFile]->GetXaxis()->SetRangeUser(-3, 3);
+        gr_a2_low[iFile]->GetYaxis()->SetRangeUser(0.0015, 0.012);
+        
+        // 添加颜色和标记样式设置
+        gr_a2_low[iFile]->SetMarkerStyle(markerStyles[iFile]);
+        gr_a2_low[iFile]->SetMarkerColor(colors[iFile]);
+        gr_a2_low[iFile]->SetLineColor(colors[iFile]);
+        
+        if (firstDraw) {
+            gr_a2_low[iFile]->Draw("AP");
+            firstDraw = false;
+        } else {
+            gr_a2_low[iFile]->Draw("P SAME");
+        }
+    }
+}
+
+TLegend *leg3_copy = new TLegend(0.2, 0.7, 0.8, 0.9);
+for (int iFile = 0; iFile < 1; iFile++) {
+    if (gr_a2_low[iFile]) {
+        leg3_copy->AddEntry(gr_a2_low[iFile], legendLabels[iFile], "p");
+    }
+}
+leg3_copy->SetBorderSize(0);
+leg3_copy->SetFillStyle(0);
+leg3_copy->Draw();
+c3_individual->SaveAs("subplot3_a2_low_vs_eta03.png");
+    
+    // 子画布4 - 所有系数在一起显示（9条线）
+    TCanvas *c4_individual = new TCanvas("c4_individual", "All Flow Coefficients vs eta", 800, 600);
+    c4_individual->cd();
+    gPad->SetLeftMargin(0.15);
+    gPad->SetBottomMargin(0.15);
+    
+    // 线型设置：实线、虚线、点线
+    int lineStyles_copy[3] = {1, 2, 3}; // 实线、虚线、点线
+    int fillStyles_copy[3] = {1001, 0, 0}; // 实心、空心、空心
+    
+    firstDraw = true;
+    double yMin_copy = 1e10, yMax_copy = -1e10;
+    
+    // 先找到y轴范围
+    for (int iFile = 0; iFile < 1; iFile++) {
+        if (gr_c2[iFile]) {
+            for (int i = 0; i < gr_c2[iFile]->GetN(); i++) {
+                double x, y;
+                gr_c2[iFile]->GetPoint(i, x, y);
+                if (y < yMin_copy) yMin_copy = y;
+                if (y > yMax_copy) yMax_copy = y;
+            }
+        }
+        if (gr_a2_high[iFile]) {
+            for (int i = 0; i < gr_a2_high[iFile]->GetN(); i++) {
+                double x, y;
+                gr_a2_high[iFile]->GetPoint(i, x, y);
+                if (y < yMin_copy) yMin_copy = y;
+                if (y > yMax_copy) yMax_copy = y;
+            }
+        }
+        if (gr_a2_low[iFile]) {
+            for (int i = 0; i < gr_a2_low[iFile]->GetN(); i++) {
+                double x, y;
+                gr_a2_low[iFile]->GetPoint(i, x, y);
+                if (y < yMin_copy) yMin_copy = y;
+                if (y > yMax_copy) yMax_copy = y;
+            }
+        }
+    }
+    
+    // 画c2
+    for (int iFile = 0; iFile < 1; iFile++) {
+        if (gr_c2[iFile]) {
+            gr_c2[iFile]->SetTitle("Flow Coefficients vs #eta");
+            gr_c2[iFile]->GetXaxis()->SetTitle("#eta");
+            gr_c2[iFile]->GetYaxis()->SetTitle("Coefficient value");
+            gr_c2[iFile]->GetXaxis()->SetRangeUser(-3, 3);
+            gr_c2[iFile]->GetYaxis()->SetRangeUser(0.005, 0.013);
+            gr_c2[iFile]->GetYaxis()->SetRangeUser(yMin_copy*0.8, yMax_copy*1.2);
+            
+            gr_c2[iFile]->SetMarkerStyle(markerStyles[iFile]);
+            gr_c2[iFile]->SetMarkerColor(colors[iFile]);
+            gr_c2[iFile]->SetLineColor(colors[iFile]);
+            gr_c2[iFile]->SetLineStyle(lineStyles_copy[iFile]);
+            gr_c2[iFile]->SetFillStyle(fillStyles_copy[iFile]);
+            
+            if (firstDraw) {
+                gr_c2[iFile]->Draw("AP");
+                firstDraw = false;
+            } else {
+                gr_c2[iFile]->Draw("P SAME");
+            }
+        }
+    }
+    
+    // 画a2_high
+    for (int iFile = 0; iFile < 1; iFile++) {
+        if (gr_a2_high[iFile]) {
+            // 使用更深的颜色变体
+            int darkColors_copy[3] = {kRed+2, kBlue+2, kGreen+4};
+            
+            gr_a2_high[iFile]->SetMarkerStyle(markerStyles[iFile]);
+            gr_a2_high[iFile]->SetMarkerColor(darkColors_copy[iFile]);
+            gr_a2_high[iFile]->SetLineColor(darkColors_copy[iFile]);
+            gr_a2_high[iFile]->SetLineStyle(lineStyles_copy[iFile]);
+            gr_a2_high[iFile]->SetFillStyle(fillStyles_copy[iFile]);
+            
+            gr_a2_high[iFile]->Draw("P SAME");
+        }
+    }
+    
+    // 画a2_low
+    for (int iFile = 0; iFile < 1; iFile++) {
+        if (gr_a2_low[iFile]) {
+            // 使用更浅的颜色变体
+            int lightColors_copy[3] = {kRed-7, kBlue-7, kGreen-7};
+            
+            gr_a2_low[iFile]->SetMarkerStyle(markerStyles[iFile]);
+            gr_a2_low[iFile]->SetMarkerColor(lightColors_copy[iFile]);
+            gr_a2_low[iFile]->SetLineColor(lightColors_copy[iFile]);
+            gr_a2_low[iFile]->SetLineStyle(lineStyles_copy[iFile]);
+            gr_a2_low[iFile]->SetFillStyle(fillStyles_copy[iFile]);
+            
+            gr_a2_low[iFile]->Draw("P SAME");
+        }
+    }
+    
+    // 创建综合图例
+    TLegend *leg4_copy = new TLegend(0.15, 0.75, 0.85, 0.95);
+    leg4_copy->SetNColumns(3); // 3列显示
+    
+    for (int iFile = 0; iFile < 1; iFile++) {
+        if (gr_c2[iFile]) {
+            leg4_copy->AddEntry(gr_c2[iFile], Form("c_{2} %s", legendLabels[iFile]), "p");
+        }
+    }
+    for (int iFile = 0; iFile < 1; iFile++) {
+        if (gr_a2_high[iFile]) {
+            int darkColors_copy[3] = {kRed+2, kBlue+2, kGreen+4};
+            gr_a2_high[iFile]->SetLineColor(darkColors_copy[iFile]); // 确保图例颜色正确
+            leg4_copy->AddEntry(gr_a2_high[iFile], Form("a_{2}^{high} %s", legendLabels[iFile]), "p");
+        }
+    }
+    for (int iFile = 0; iFile < 1; iFile++) {
+        if (gr_a2_low[iFile]) {
+            int lightColors_copy[3] = {kRed-7, kBlue-7, kGreen-7};
+            gr_a2_low[iFile]->SetLineColor(lightColors_copy[iFile]); // 确保图例颜色正确
+            leg4_copy->AddEntry(gr_a2_low[iFile], Form("a_{2}^{low} %s", legendLabels[iFile]), "p");
+        }
+    }
+    
+    leg4_copy->SetBorderSize(0);
+    leg4_copy->SetFillStyle(0);
+    leg4_copy->SetTextSize(0.025); // 调小字体以适应更多条目
+    leg4_copy->Draw();
+    c4_individual->SaveAs("subplot4_all_coefficients_vs_eta03.png");
+    
+    // 创建只显示c2的单独图
+    TCanvas *c_c2_only = new TCanvas("c_c2_only", "c2 Comparison", 800, 600);
+    c_c2_only->cd();
+    gPad->SetLeftMargin(0.15);
+    gPad->SetBottomMargin(0.15);
+    
+    firstDraw = true;
+    for (int iFile = 0; iFile < 1; iFile++) {
+        if (gr_c2[iFile]) {
+            gr_c2[iFile]->SetTitle("Long-range flow coefficient c_{2} vs #eta");
+            gr_c2[iFile]->GetXaxis()->SetTitle("#eta");
+            gr_c2[iFile]->GetYaxis()->SetTitle("c_{2}");
+            gr_c2[iFile]->GetXaxis()->SetRangeUser(-3, 3);
+            gr_c2[iFile]->GetYaxis()->SetRangeUser(0.0025, 0.01);
+            
+            if (firstDraw) {
+                gr_c2[iFile]->Draw("AP");
+                firstDraw = false;
+            } else {
+                gr_c2[iFile]->Draw("P SAME");
+            }
+        }
+    }
+    
+    TLegend *leg_c2_only = new TLegend(0.2, 0.7, 0.8, 0.9);
+    for (int iFile = 0; iFile < 1; iFile++) {
+        if (gr_c2[iFile]) {
+            leg_c2_only->AddEntry(gr_c2[iFile], legendLabels[iFile], "p");
+        }
+    }
+    leg_c2_only->SetBorderSize(0);
+    leg_c2_only->SetFillStyle(0);
+    leg_c2_only->Draw();
+    
+    c_c2_only->SaveAs("c2_vs_eta_comparison_only.png");
+    
     // 保存最终结果到输出文件
     outfile->cd();
-    gr_c2_rebinned->Write("gr_c2_rebinned");
-    gr_a2_high_rebinned->Write("gr_a2_high_rebinned");
-    gr_a2_low_rebinned->Write("gr_a2_low_rebinned");
-    
-    c->Write("c2_and_a2_vs_eta_rebinned");
+    //c->Write("multifile_comparison");
+    c_c2_only->Write("c2_comparison_only");
+    c1_individual->Write("subplot1_c203");
+    c2_individual->Write("subplot2_a2_high03"); 
+    c3_individual->Write("subplot3_a2_low03");
+    c4_individual->Write("subplot4_all_coefficients03");
     
     outfile->Close();
     
     // 清理内存
-    delete c;
-    delete leg;
-    delete[] xErrors;  // 释放横坐标误差数组
-    delete file_1;
-    delete file_2;
+    //delete c;
+    delete c_c2_only;
+    delete c1_individual;
+    delete c2_individual;
+    delete c3_individual;
+    delete c4_individual;
+    // delete leg1;
+    // delete leg2; 
+    // delete leg3;
+    // delete leg4;
+    delete leg_c2_only;
+    delete leg1_copy;
+    delete leg2_copy;
+    delete leg3_copy;
+    delete leg4_copy;
+    
+    std::cout << "Analysis completed successfully!" << std::endl;
 }
