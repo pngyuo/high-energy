@@ -299,22 +299,23 @@ void processFile(const char* fileName, const char* fileLabel, TFile* outfile,
 
 void calc_flow_ancn_longRange_files() {
     // 文件列表
-    const char* fileNames[3] = {
+    const char* fileNames[4] = {
         "hist_ampt_3q_1.5mb_Decorr_yuhao.root",
         "hist_ampt_3q_0.15mb_Decorr_yuhao.root", 
-        "hist_ampt_normal_1.5mb_a_0.8_b_0.4_Decorr_yuhao.root"
+        "hist_ampt_3q_1.5mb_a_0.8_b_0.4_Decorr_yuhao.root",
+        "hist_ampt_normal_0.15mb_a_0.8_b_0.4_Decorr_yuhao.root"
     };
     
-    const char* fileLabels[3] = {"3q_1.5mb", "3q_0.15mb", "normal_1.5mb_a08_b04"};
-    const char* legendLabels[3] = {"3q 1.5mb", "3q 0.15mb", "normal 1.5mb a=0.8 b=0.4"};
+    const char* fileLabels[4] = {"3q_1.5mb", "3q_0.15mb", "normal_1.5mb_a08_b04","normal_0.15mb_a08_b04"};
+    const char* legendLabels[4] = {"3q 1.5mb", "3q 0.15mb", "normal 1.5mb a=0.8 b=0.4", "normal 0.15mb a=0.8 b=0.4"};
     
     // 创建输出文件
     TFile *outfile = new TFile("longRange_flow_multifile.root", "RECREATE");
     
     // 存储三个文件的结果
-    TGraphErrors *gr_c2[3];
-    TGraphErrors *gr_a2_high[3];
-    TGraphErrors *gr_a2_low[3];
+    TGraphErrors *gr_c2[4];
+    TGraphErrors *gr_a2_high[4];
+    TGraphErrors *gr_a2_low[4];
     
     // 处理三个文件
     for (int iFile = 0; iFile < 2; iFile++) {
@@ -327,8 +328,8 @@ void calc_flow_ancn_longRange_files() {
     // c->Divide(4, 1); // 分为4个子画布
     
     // // 颜色和标记样式设置
-    int colors[3] = {kRed, kBlue, kGreen+2};
-    int markerStyles[3] = {20, 21, 22};
+    int colors[4] = {kBlack,kRed, kBlue, kGreen+2};
+    int markerStyles[4] = {20, 21, 22,23};
     
     // // 子画布1: c2对比
     // c->cd(1);
@@ -567,108 +568,125 @@ void calc_flow_ancn_longRange_files() {
     // c->SaveAs("c2_and_a2_vs_eta_multifile_comparison.png");
     
     // 保存每个子画布为单独的文件
-    // 子画布1 - c2对比
-    TCanvas *c1_individual = new TCanvas("c1_individual", "c2 vs eta", 800, 600);
-    c1_individual->cd();
-    gPad->SetLeftMargin(0.15);
-    gPad->SetBottomMargin(0.15);
-    
-    firstDraw = true;
-    for (int iFile = 0; iFile < 2; iFile++) {
-        if (gr_c2[iFile]) {
-            gr_c2[iFile]->SetTitle("c_{2} vs #eta");
-            gr_c2[iFile]->GetXaxis()->SetTitle("#eta");
-            gr_c2[iFile]->GetYaxis()->SetTitle("c_{2}");
-            gr_c2[iFile]->GetXaxis()->SetRangeUser(-2.5, 2.5);
-            gr_c2[iFile]->GetYaxis()->SetRangeUser(0.0025, 0.01);
-            
-            if (firstDraw) {
-                gr_c2[iFile]->Draw("AP");
-                firstDraw = false;
-            } else {
-                gr_c2[iFile]->Draw("P SAME");
-            }
+// 子画布1 - c2对比
+TCanvas *c1_individual = new TCanvas("c1_individual", "c2 vs eta", 800, 600);
+c1_individual->cd();
+gPad->SetLeftMargin(0.15);
+gPad->SetBottomMargin(0.15);
+
+firstDraw = true;
+for (int iFile = 0; iFile < 2; iFile++) {
+    if (gr_c2[iFile]) {
+        gr_c2[iFile]->SetTitle("c_{2} vs #eta");
+        gr_c2[iFile]->GetXaxis()->SetTitle("#eta");
+        gr_c2[iFile]->GetYaxis()->SetTitle("c_{2}");
+        gr_c2[iFile]->GetXaxis()->SetRangeUser(-2.5, 2.5);
+        gr_c2[iFile]->GetYaxis()->SetRangeUser(0.0025, 0.01);
+        
+        // 添加颜色和标记样式设置
+        gr_c2[iFile]->SetMarkerStyle(markerStyles[iFile]);
+        gr_c2[iFile]->SetMarkerColor(colors[iFile]);
+        gr_c2[iFile]->SetLineColor(colors[iFile]);
+        
+        if (firstDraw) {
+            gr_c2[iFile]->Draw("AP");
+            firstDraw = false;
+        } else {
+            gr_c2[iFile]->Draw("P SAME");
         }
     }
-    
-    TLegend *leg1_copy = new TLegend(0.2, 0.7, 0.8, 0.9);
-    for (int iFile = 0; iFile < 2; iFile++) {
-        if (gr_c2[iFile]) {
-            leg1_copy->AddEntry(gr_c2[iFile], legendLabels[iFile], "p");
+}
+
+TLegend *leg1_copy = new TLegend(0.2, 0.7, 0.8, 0.9);
+for (int iFile = 0; iFile < 2; iFile++) {
+    if (gr_c2[iFile]) {
+        leg1_copy->AddEntry(gr_c2[iFile], legendLabels[iFile], "p");
+    }
+}
+leg1_copy->SetBorderSize(0);
+leg1_copy->SetFillStyle(0);
+leg1_copy->Draw();
+c1_individual->SaveAs("subplot1_c2_vs_eta.png");
+
+// 子画布2 - a2_high对比
+TCanvas *c2_individual = new TCanvas("c2_individual", "a2_high vs eta", 800, 600);
+c2_individual->cd();
+gPad->SetLeftMargin(0.15);
+gPad->SetBottomMargin(0.15);
+
+firstDraw = true;
+for (int iFile = 0; iFile < 2; iFile++) {
+    if (gr_a2_high[iFile]) {
+        gr_a2_high[iFile]->SetTitle("a_{2}^{high} vs #eta");
+        gr_a2_high[iFile]->GetXaxis()->SetTitle("#eta");
+        gr_a2_high[iFile]->GetYaxis()->SetTitle("a_{2}^{high}");
+        gr_a2_high[iFile]->GetXaxis()->SetRangeUser(-2.5, 2.5);
+        gr_a2_high[iFile]->GetYaxis()->SetRangeUser(0.0015, 0.012);
+        
+        // 添加颜色和标记样式设置
+        gr_a2_high[iFile]->SetMarkerStyle(markerStyles[iFile]);
+        gr_a2_high[iFile]->SetMarkerColor(colors[iFile]);
+        gr_a2_high[iFile]->SetLineColor(colors[iFile]);
+        
+        if (firstDraw) {
+            gr_a2_high[iFile]->Draw("AP");
+            firstDraw = false;
+        } else {
+            gr_a2_high[iFile]->Draw("P SAME");
         }
     }
-    leg1_copy->SetBorderSize(0);
-    leg1_copy->SetFillStyle(0);
-    leg1_copy->Draw();
-    c1_individual->SaveAs("subplot1_c2_vs_eta.png");
-    
-    // 子画布2 - a2_high对比
-    TCanvas *c2_individual = new TCanvas("c2_individual", "a2_high vs eta", 800, 600);
-    c2_individual->cd();
-    gPad->SetLeftMargin(0.15);
-    gPad->SetBottomMargin(0.15);
-    
-    firstDraw = true;
-    for (int iFile = 0; iFile < 2; iFile++) {
-        if (gr_a2_high[iFile]) {
-            gr_a2_high[iFile]->SetTitle("a_{2}^{high} vs #eta");
-            gr_a2_high[iFile]->GetXaxis()->SetTitle("#eta");
-            gr_a2_high[iFile]->GetYaxis()->SetTitle("a_{2}^{high}");
-            gr_a2_high[iFile]->GetXaxis()->SetRangeUser(-2.5, 2.5);
-            
-            if (firstDraw) {
-                gr_a2_high[iFile]->Draw("AP");
-                firstDraw = false;
-            } else {
-                gr_a2_high[iFile]->Draw("P SAME");
-            }
+}
+
+TLegend *leg2_copy = new TLegend(0.2, 0.7, 0.8, 0.9);
+for (int iFile = 0; iFile < 2; iFile++) {
+    if (gr_a2_high[iFile]) {
+        leg2_copy->AddEntry(gr_a2_high[iFile], legendLabels[iFile], "p");
+    }
+}
+leg2_copy->SetBorderSize(0);
+leg2_copy->SetFillStyle(0);
+leg2_copy->Draw();
+c2_individual->SaveAs("subplot2_a2_high_vs_eta.png");
+
+// 子画布3 - a2_low对比
+TCanvas *c3_individual = new TCanvas("c3_individual", "a2_low vs eta", 800, 600);
+c3_individual->cd();
+gPad->SetLeftMargin(0.15);
+gPad->SetBottomMargin(0.15);
+
+firstDraw = true;
+for (int iFile = 0; iFile < 2; iFile++) {
+    if (gr_a2_low[iFile]) {
+        gr_a2_low[iFile]->SetTitle("a_{2}^{low} vs #eta");
+        gr_a2_low[iFile]->GetXaxis()->SetTitle("#eta");
+        gr_a2_low[iFile]->GetYaxis()->SetTitle("a_{2}^{low}");
+        gr_a2_low[iFile]->GetXaxis()->SetRangeUser(-2.5, 2.5);
+        gr_a2_low[iFile]->GetYaxis()->SetRangeUser(0.0015, 0.012);
+        
+        // 添加颜色和标记样式设置
+        gr_a2_low[iFile]->SetMarkerStyle(markerStyles[iFile]);
+        gr_a2_low[iFile]->SetMarkerColor(colors[iFile]);
+        gr_a2_low[iFile]->SetLineColor(colors[iFile]);
+        
+        if (firstDraw) {
+            gr_a2_low[iFile]->Draw("AP");
+            firstDraw = false;
+        } else {
+            gr_a2_low[iFile]->Draw("P SAME");
         }
     }
-    
-    TLegend *leg2_copy = new TLegend(0.2, 0.7, 0.8, 0.9);
-    for (int iFile = 0; iFile < 2; iFile++) {
-        if (gr_a2_high[iFile]) {
-            leg2_copy->AddEntry(gr_a2_high[iFile], legendLabels[iFile], "p");
-        }
+}
+
+TLegend *leg3_copy = new TLegend(0.2, 0.7, 0.8, 0.9);
+for (int iFile = 0; iFile < 2; iFile++) {
+    if (gr_a2_low[iFile]) {
+        leg3_copy->AddEntry(gr_a2_low[iFile], legendLabels[iFile], "p");
     }
-    leg2_copy->SetBorderSize(0);
-    leg2_copy->SetFillStyle(0);
-    leg2_copy->Draw();
-    c2_individual->SaveAs("subplot2_a2_high_vs_eta.png");
-    
-    // 子画布3 - a2_low对比
-    TCanvas *c3_individual = new TCanvas("c3_individual", "a2_low vs eta", 800, 600);
-    c3_individual->cd();
-    gPad->SetLeftMargin(0.15);
-    gPad->SetBottomMargin(0.15);
-    
-    firstDraw = true;
-    for (int iFile = 0; iFile < 2; iFile++) {
-        if (gr_a2_low[iFile]) {
-            gr_a2_low[iFile]->SetTitle("a_{2}^{low} vs #eta");
-            gr_a2_low[iFile]->GetXaxis()->SetTitle("#eta");
-            gr_a2_low[iFile]->GetYaxis()->SetTitle("a_{2}^{low}");
-            gr_a2_low[iFile]->GetXaxis()->SetRangeUser(-2.5, 2.5);
-            
-            if (firstDraw) {
-                gr_a2_low[iFile]->Draw("AP");
-                firstDraw = false;
-            } else {
-                gr_a2_low[iFile]->Draw("P SAME");
-            }
-        }
-    }
-    
-    TLegend *leg3_copy = new TLegend(0.2, 0.7, 0.8, 0.9);
-    for (int iFile = 0; iFile < 2; iFile++) {
-        if (gr_a2_low[iFile]) {
-            leg3_copy->AddEntry(gr_a2_low[iFile], legendLabels[iFile], "p");
-        }
-    }
-    leg3_copy->SetBorderSize(0);
-    leg3_copy->SetFillStyle(0);
-    leg3_copy->Draw();
-    c3_individual->SaveAs("subplot3_a2_low_vs_eta.png");
+}
+leg3_copy->SetBorderSize(0);
+leg3_copy->SetFillStyle(0);
+leg3_copy->Draw();
+c3_individual->SaveAs("subplot3_a2_low_vs_eta.png");
     
     // 子画布4 - 所有系数在一起显示（9条线）
     TCanvas *c4_individual = new TCanvas("c4_individual", "All Flow Coefficients vs eta", 800, 600);
@@ -718,7 +736,7 @@ void calc_flow_ancn_longRange_files() {
             gr_c2[iFile]->GetXaxis()->SetTitle("#eta");
             gr_c2[iFile]->GetYaxis()->SetTitle("Coefficient value");
             gr_c2[iFile]->GetXaxis()->SetRangeUser(-2.5, 2.5);
-            gr_c2[iFile]->GetYaxis()->SetRangeUser(0, 0.11);
+            gr_c2[iFile]->GetYaxis()->SetRangeUser(0.005, 0.013);
             gr_c2[iFile]->GetYaxis()->SetRangeUser(yMin_copy*0.8, yMax_copy*1.2);
             
             gr_c2[iFile]->SetMarkerStyle(markerStyles[iFile]);

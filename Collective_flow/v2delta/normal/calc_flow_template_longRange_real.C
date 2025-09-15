@@ -119,7 +119,7 @@ void processFile(TString filename, TString label, int color, TGraphErrors** gr_v
   TH1D *hSameLowRidgeFMD12FMD3 = sumRidge(hsameLow_1FMD12FMD3, "sameLowFMD12FMD3");
   TH1D *hMixLowRidgeFMD12FMD3 = sumRidge(hmixedLow_1FMD12FMD3, "mixLowFMD12FMD3");
   TH1D *hYLowFMD12FMD3 = getY(hSameLowRidgeFMD12FMD3, hMixLowRidgeFMD12FMD3, "YLowFMD12FMD3", hTrigPtLow_1FMD12FMD3->GetEntries());
-  hYLowFMD12FMD3->Rebin(2);
+  // hYLowFMD12FMD3->Rebin(2);
 
   TH1D *hSameHighRidgeFMD12FMD3 = sumRidge(hsameHigh_1FMD12FMD3, "sameHighFMD12FMD3");
   TH1D *hMixHighRidgeFMD12FMD3 = sumRidge(hmixedHigh_1FMD12FMD3, "mixHighFMD12FMD3");
@@ -162,7 +162,7 @@ void processFile(TString filename, TString label, int color, TGraphErrors** gr_v
       hTrigPt_centFMD12FMD3[icent]=(TH1D*)file_2->Get(Form("hTrigPt_CentFMD12FMD3%d",icent));
     }
     TH1D *hYHigh_centbinFMD12FMD3 = getYFromHist(hsame_centFMD12FMD3[icent], hmixed_centFMD12FMD3[icent], Form("High_centFMD12FMD3%d",icent), hTrigPt_centFMD12FMD3[icent]->GetEntries());
-    hYHigh_centbinFMD12FMD3->Rebin(2);
+    // hYHigh_centbinFMD12FMD3->Rebin(2);
     TH1D *hSumRidgeFMD12FMD3 = sumRidge(hsame_centFMD12FMD3[icent], Form("sumRidgeFMD12FMD3_cent%d", icent));
     SaveSumRidgePlots(hSumRidgeFMD12FMD3, Form("sumRidgeFMD12FMD3_cent%d", icent));
     TH1D *hmixSumRidgeFMD12FMD3 = sumRidge(hmixed_centFMD12FMD3[icent], Form("summixRidgeFMD12FMD3_cent%d", icent));
@@ -406,13 +406,4 @@ void calc_flow_template_longRange_real(){
   c_combined->SaveAs("flow_comparison_all.png");
   
   outfile->Close();
-  
-  cout << "\n=== Analysis completed ===" << endl;
-  cout << "Output files created:" << endl;
-  cout << "- longRange_flow_comparison.root (contains all TGraphErrors)" << endl;
-  cout << "- v22_Nch_comparison.png" << endl;
-  cout << "- v33_Nch_comparison.png" << endl;
-  cout << "- v2_pt_comparison.png" << endl;
-  cout << "- v3_pt_comparison.png" << endl;
-  cout << "- flow_comparison_all.png (combined plot)" << endl;
 }

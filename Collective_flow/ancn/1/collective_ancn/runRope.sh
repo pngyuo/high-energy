@@ -1,1 +1,0 @@
-./analyse_decayer /home/adminuser/Working/pythia8_ampt/filelist/pp_13TeV_colorRope.list hist_outputRope.root >& logfileRope &

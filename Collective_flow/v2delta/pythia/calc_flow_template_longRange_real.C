@@ -88,7 +88,7 @@ double getV22(TH1D *hYHigh, TH1D *hYLow, double &err, double &v33, double &v33er
   gYIntegral=hYHigh->Integral("width");
   hGlobalPeriph = hYLow;
   TF1 *fitFun = new TF1("fitFun", funTemplate, -0.5*PI, 1.5*PI, 3);
-  fitFun->SetParameters(2, 0.03,0.01);
+  fitFun->SetParameters(1, 0.1,-0.1);
   hYHigh->Fit("fitFun");
   err = fitFun->GetParError(1);
   v33 = fitFun->GetParameter(2);
@@ -103,9 +103,9 @@ void SaveSumRidgePlots(TH1D *hSumRidge, TString name) {
   c.SaveAs(Form("sumridge_plots/%s.png", name.Data()));
 }
 
-void calc_flow_template_longRange_real(){
-	TFile *file_1 = new TFile("hist_outputallFSI.root");
-	TFile *file_2 = new TFile("hist_outputallFSI.root");
+void processFile(TString filename, TString label, int color, TGraphErrors** gr_v22_Nch, TGraphErrors** gr_v33_Nch, TGraphErrors** gr_v2_pt, TGraphErrors** gr_v3_pt) {
+	TFile *file_1 = new TFile(filename);
+	TFile *file_2 = new TFile(filename);
 
   //FMD12FMD3
   TH2D *hsameHigh_1FMD12FMD3 = (TH2D*)file_2->Get("hDEtaDPhiSameEventHighMidFMD12FMD3");
@@ -119,16 +119,8 @@ void calc_flow_template_longRange_real(){
   TH1D *hSameLowRidgeFMD12FMD3 = sumRidge(hsameLow_1FMD12FMD3, "sameLowFMD12FMD3");
   TH1D *hMixLowRidgeFMD12FMD3 = sumRidge(hmixedLow_1FMD12FMD3, "mixLowFMD12FMD3");
   TH1D *hYLowFMD12FMD3 = getY(hSameLowRidgeFMD12FMD3, hMixLowRidgeFMD12FMD3, "YLowFMD12FMD3", hTrigPtLow_1FMD12FMD3->GetEntries());
-  hYLowFMD12FMD3->Rebin(2);
-  {
-    TCanvas cLow("cLowFMD12FMD3", "Low Multiplicity Template - FMD12FMD3", 800, 600);
-    hYLowFMD12FMD3->SetTitle("Low Multiplicity Template - FMD12FMD3; #Delta#phi; Y(#Delta#phi)");
-    hYLowFMD12FMD3->SetLineColor(kGreen);
-    hYLowFMD12FMD3->SetMarkerColor(kGreen);
-    hYLowFMD12FMD3->SetMarkerStyle(22);
-    hYLowFMD12FMD3->Draw("P");
-    cLow.SaveAs("test_figure/low_templates/low_template_FMD12FMD3.png");
-}
+  // hYLowFMD12FMD3->Rebin(2);
+
   TH1D *hSameHighRidgeFMD12FMD3 = sumRidge(hsameHigh_1FMD12FMD3, "sameHighFMD12FMD3");
   TH1D *hMixHighRidgeFMD12FMD3 = sumRidge(hmixedHigh_1FMD12FMD3, "mixHighFMD12FMD3");
   TH1D *hYHighFMD12FMD3 = getY(hSameHighRidgeFMD12FMD3, hMixHighRidgeFMD12FMD3, "YHighFMD12FMD3", hTrigPtHigh_1FMD12FMD3->GetEntries());
@@ -141,16 +133,13 @@ void calc_flow_template_longRange_real(){
   double v22FMD12FMD3 = getV22(hYHighFMD12FMD3, hYLowFMD12FMD3, v22_errFMD12FMD3, v33FMD12FMD3, v33_errFMD12FMD3);
   cout<<v22FMD12FMD3<<" "<<v22_errFMD12FMD3<<endl;
 
-  //FMD12FMD3
+  //FMD12FMD3 - NCh dependence
   const int N_cent=8;
   double Nsel_min=0;
   double Nsel_bin=10;
   TH2D *hsame_centFMD12FMD3[N_cent];
   TH2D *hmixed_centFMD12FMD3[N_cent];
   TH1D *hTrigPt_centFMD12FMD3[N_cent];
-  TH2D *hsame_cent_PidFMD12FMD3[N_cent];
-  TH2D *hmixed_cent_PidFMD12FMD3[N_cent];
-  TH1D *hTrigPt_cent_PidFMD12FMD3[N_cent];
   double Nsel_valFMD12FMD3[N_cent]={0};
   double Nsel_bin_widthFMD12FMD3[N_cent]={0};
   double v22_NchFMD12FMD3[N_cent]={0};
@@ -173,7 +162,7 @@ void calc_flow_template_longRange_real(){
       hTrigPt_centFMD12FMD3[icent]=(TH1D*)file_2->Get(Form("hTrigPt_CentFMD12FMD3%d",icent));
     }
     TH1D *hYHigh_centbinFMD12FMD3 = getYFromHist(hsame_centFMD12FMD3[icent], hmixed_centFMD12FMD3[icent], Form("High_centFMD12FMD3%d",icent), hTrigPt_centFMD12FMD3[icent]->GetEntries());
-    hYHigh_centbinFMD12FMD3->Rebin(2);
+    // hYHigh_centbinFMD12FMD3->Rebin(2);
     TH1D *hSumRidgeFMD12FMD3 = sumRidge(hsame_centFMD12FMD3[icent], Form("sumRidgeFMD12FMD3_cent%d", icent));
     SaveSumRidgePlots(hSumRidgeFMD12FMD3, Form("sumRidgeFMD12FMD3_cent%d", icent));
     TH1D *hmixSumRidgeFMD12FMD3 = sumRidge(hmixed_centFMD12FMD3[icent], Form("summixRidgeFMD12FMD3_cent%d", icent));
@@ -189,21 +178,232 @@ void calc_flow_template_longRange_real(){
     v33_NchFMD12FMD3[icent]=v33_centFMD12FMD3;
     v33_Nch_errFMD12FMD3[icent]=v33_cent_errFMD12FMD3;
   }
-  TGraphErrors *gr_v22_NchFMD12FMD3 = new TGraphErrors(N_cent, Nsel_valFMD12FMD3, v22_NchFMD12FMD3, Nsel_bin_widthFMD12FMD3, v22_Nch_errFMD12FMD3);
-  TGraphErrors *gr_v33_NchFMD12FMD3 = new TGraphErrors(N_cent, Nsel_valFMD12FMD3, v33_NchFMD12FMD3, Nsel_bin_widthFMD12FMD3, v33_Nch_errFMD12FMD3);
-
-  TFile *outfile = new TFile("longRange_flow.root", "recreate");
-
-  gr_v22_NchFMD12FMD3->Write("gr_v22_NchFMD12FMD3");
-  gr_v33_NchFMD12FMD3->Write("gr_v33_NchFMD12FMD3");
   
-  // 保存 gr_v22_NchFMD12FMD3 为图片
-  TCanvas *c_v22_NchFMD12FMD3 = new TCanvas("c_v22_NchFMD12FMD3", "v22 vs Nch FMD12FMD3", 800, 600);
-  gr_v22_NchFMD12FMD3->Draw("ape");
-  c_v22_NchFMD12FMD3->SaveAs("v22_NchFMD12FMD3.png");
+  *gr_v22_Nch = new TGraphErrors(N_cent, Nsel_valFMD12FMD3, v22_NchFMD12FMD3, Nsel_bin_widthFMD12FMD3, v22_Nch_errFMD12FMD3);
+  *gr_v33_Nch = new TGraphErrors(N_cent, Nsel_valFMD12FMD3, v33_NchFMD12FMD3, Nsel_bin_widthFMD12FMD3, v33_Nch_errFMD12FMD3);
   
-  // 保存 gr_v33_NchFMD12FMD3 为图片
-  // TCanvas *c_v33_NchFMD12FMD3 = new TCanvas("c_v33_NchFMD12FMD3", "v33 vs Nch FMD12FMD3", 800, 600);
-  // gr_v33_NchFMD12FMD3->Draw("ape");
-  // c_v33_NchFMD12FMD3->SaveAs("v33_NchFMD12FMD3.png");
+  (*gr_v22_Nch)->SetMarkerColor(color);
+  (*gr_v22_Nch)->SetLineColor(color);
+  (*gr_v33_Nch)->SetMarkerColor(color);
+  (*gr_v33_Nch)->SetLineColor(color);
+
+  // pT dependence
+  const int N_ptbin=10;
+  double ptbin_valFMD12FMD3[N_ptbin]={0};
+  double ptbin_edgeFMD12FMD3[N_ptbin+1]={0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 2.0, 2.5, 3.5, 4.5};
+  double ptbin_widthFMD12FMD3[N_ptbin]={0};
+  double v22_High_ptFMD12FMD3[N_ptbin]={0};
+  double v22_High_pt_errFMD12FMD3[N_ptbin]={0};
+  double v33_High_ptFMD12FMD3[N_ptbin]={0};
+  double v33_High_pt_errFMD12FMD3[N_ptbin]={0};
+  double v2_pt[N_ptbin]={0};
+  double v2_pt_err[N_ptbin]={0};
+  double v3_pt[N_ptbin]={0};
+  double v3_pt_err[N_ptbin]={0};
+  
+  TH2D *hsameHigh_ptbinFMD12FMD3[N_ptbin];
+  TH2D *hmixedHigh_ptbinFMD12FMD3[N_ptbin];
+  TH1D *hTrigPtHigh_ptbinFMD12FMD3[N_ptbin];
+  TH2D *hsameLow_ptbinFMD12FMD3[N_ptbin];
+  TH2D *hmixedLow_ptbinFMD12FMD3[N_ptbin];
+  TH1D *hTrigPtLow_ptbinFMD12FMD3[N_ptbin];
+  
+  for(int i=0; i<N_ptbin; i++){
+    //FMD12FMD3
+    ptbin_valFMD12FMD3[i]=(ptbin_edgeFMD12FMD3[i]+ptbin_edgeFMD12FMD3[i+1])*0.5;
+    ptbin_widthFMD12FMD3[i]=(ptbin_edgeFMD12FMD3[i+1]-ptbin_edgeFMD12FMD3[i])*0.5;
+    
+    hsameHigh_ptbinFMD12FMD3[i]=(TH2D*)file_1->Get(Form("hDEtaDPhiSameEventHigh_ptbinFMD12FMD3%d",i));
+    hmixedHigh_ptbinFMD12FMD3[i]=(TH2D*)file_1->Get(Form("hDEtaDPhiMixEventHigh_ptbinFMD12FMD3%d",i));
+    hTrigPtHigh_ptbinFMD12FMD3[i]=(TH1D*)file_1->Get(Form("hTrigPtHigh_ptbinFMD12FMD3%d",i));
+    
+    if(hTrigPtHigh_ptbinFMD12FMD3[i] && hTrigPtHigh_ptbinFMD12FMD3[i]->GetEntries() > 0) {
+      ptbin_valFMD12FMD3[i]=hTrigPtHigh_ptbinFMD12FMD3[i]->GetMean();
+    }
+
+    TH1D *hYHigh_ptbinFMD12FMD3 = getYFromHist(hsameHigh_ptbinFMD12FMD3[i], hmixedHigh_ptbinFMD12FMD3[i], Form("High_ptbinFMD12FMD3%d",i), hTrigPtHigh_ptbinFMD12FMD3[i]->GetEntries());
+
+    hsameLow_ptbinFMD12FMD3[i]=(TH2D*)file_1->Get(Form("hDEtaDPhiSameEventLow_ptbinFMD12FMD3%d",i));
+    hmixedLow_ptbinFMD12FMD3[i]=(TH2D*)file_1->Get(Form("hDEtaDPhiMixEventLow_ptbinFMD12FMD3%d",i));
+    hTrigPtLow_ptbinFMD12FMD3[i]=(TH1D*)file_1->Get(Form("hTrigPtLow_ptbinFMD12FMD3%d",i));
+    TH1D *hYLow_ptbinFMD12FMD3 = getYFromHist(hsameLow_ptbinFMD12FMD3[i], hmixedLow_ptbinFMD12FMD3[i], Form("Low_ptbinFMD12FMD3%d",i), hTrigPtLow_ptbinFMD12FMD3[i]->GetEntries());
+
+    double v33FMD12FMD3 = 0;
+    double v33_errFMD12FMD3 = 0;
+    double v22_errFMD12FMD3 = 0;
+    double v22FMD12FMD3 = getV22(hYHigh_ptbinFMD12FMD3, hYLow_ptbinFMD12FMD3, v22_errFMD12FMD3, v33FMD12FMD3, v33_errFMD12FMD3);
+
+    v22_High_ptFMD12FMD3[i]=v22FMD12FMD3;
+    v22_High_pt_errFMD12FMD3[i]=v22_errFMD12FMD3;
+    v33_High_ptFMD12FMD3[i]=v33FMD12FMD3;
+    v33_High_pt_errFMD12FMD3[i]=v33_errFMD12FMD3;
+
+    // Simplified calculation - using the flow coefficients directly
+    v2_pt[i] = v22_High_ptFMD12FMD3[i];
+    v2_pt_err[i] = v22_High_pt_errFMD12FMD3[i];
+    v3_pt[i] = v33_High_ptFMD12FMD3[i];
+    v3_pt_err[i] = v33_High_pt_errFMD12FMD3[i];
+
+    cout<<v2_pt[i]<<" "<<v2_pt_err[i]<<endl;
+    cout<<v3_pt[i]<<" "<<v3_pt_err[i]<<endl;
+  }
+
+  *gr_v2_pt = new TGraphErrors(N_ptbin, ptbin_valFMD12FMD3, v2_pt, ptbin_widthFMD12FMD3, v2_pt_err);
+  *gr_v3_pt = new TGraphErrors(N_ptbin, ptbin_valFMD12FMD3, v3_pt, ptbin_widthFMD12FMD3, v3_pt_err);
+  
+  (*gr_v2_pt)->SetMarkerColor(color);
+  (*gr_v2_pt)->SetLineColor(color);
+  (*gr_v3_pt)->SetMarkerColor(color);
+  (*gr_v3_pt)->SetLineColor(color);
+  
+  file_1->Close();
+  file_2->Close();
+}
+
+void calc_flow_template_longRange_real(){
+  gStyle->SetOptStat(kFALSE);
+  // Create output directories
+  gSystem->mkdir("test_figure", kTRUE);
+  gSystem->mkdir("test_figure/low_templates", kTRUE);
+  gSystem->mkdir("sumridge_plots", kTRUE);
+  
+  // Define the three files and their properties
+  TString filenames[4] = {
+    "hist_outputallFSI.root",
+    "hist_ampt_normal_0.15mb_longRange_yuhao.root", 
+    "hist_ampt_normal_1.5mb_a_0.8_b_0.4_longRange_yuhao.root",
+    "hist_ampt_normal_0.15mb_a_0.8_b_0.4_longRange_yuhao.root"
+  };
+  
+  TString labels[4] = {"normal_1.5mb", "normal_0.15mb", "normal_1.5mb_a0.8_b0.4","normal_0.15mb_a0.8_b0.4"};
+  int colors[4] = {kBlack,kRed, kBlue, kGreen};
+  int markers[4] = {20, 21, 22,23};
+  
+  // Arrays to store graphs for all files
+  TGraphErrors *gr_v22_Nch[4];
+  TGraphErrors *gr_v33_Nch[4];
+  TGraphErrors *gr_v2_pt[4];
+  TGraphErrors *gr_v3_pt[4];
+  
+  // Process all three files
+  for(int ifile = 0; ifile < 1; ifile++) {
+    cout << "\n=== Processing file " << ifile+1 << ": " << filenames[ifile] << " ===" << endl;
+    processFile(filenames[ifile], labels[ifile], colors[ifile], 
+                &gr_v22_Nch[ifile], &gr_v33_Nch[ifile], 
+                &gr_v2_pt[ifile], &gr_v3_pt[ifile]);
+    
+    // Set marker styles
+    gr_v22_Nch[ifile]->SetMarkerStyle(markers[ifile]);
+    gr_v33_Nch[ifile]->SetMarkerStyle(markers[ifile]);
+    gr_v2_pt[ifile]->SetMarkerStyle(markers[ifile]);
+    gr_v3_pt[ifile]->SetMarkerStyle(markers[ifile]);
+  }
+  
+  // Create output file and save individual graphs
+  TFile *outfile = new TFile("longRange_flow_comparison.root", "recreate");
+  
+  for(int ifile = 0; ifile < 1; ifile++) {
+    gr_v22_Nch[ifile]->Write(Form("gr_v22_Nch_%s", labels[ifile].Data()));
+    gr_v33_Nch[ifile]->Write(Form("gr_v33_Nch_%s", labels[ifile].Data()));
+    gr_v2_pt[ifile]->Write(Form("gr_v2_pt_%s", labels[ifile].Data()));
+    gr_v3_pt[ifile]->Write(Form("gr_v3_pt_%s", labels[ifile].Data()));
+  }
+  
+  // Create comparison plots
+  
+  // 1. v22 vs NCh comparison
+  TCanvas *c_v22_Nch = new TCanvas("c_v22_Nch", "v22 vs Nch Comparison", 800, 600);
+  
+  TH2D *hframe_Nch = new TH2D("hframe_Nch", ";N_{ch};v_{2}{2}", 100, 0, 80, 100, 0, 0.0072);
+  hframe_Nch->Draw();
+  
+  TLegend *leg_Nch = new TLegend(0.15, 0.4, 0.4, 0.7);
+  leg_Nch->SetTextSize(0.030);
+  leg_Nch->SetBorderSize(0);
+  for(int ifile = 0; ifile < 1; ifile++) {
+    gr_v22_Nch[ifile]->Draw("same p");
+    leg_Nch->AddEntry(gr_v22_Nch[ifile], labels[ifile], "p");
+  }
+  leg_Nch->Draw();
+  c_v22_Nch->SaveAs("v22_Nch_comparison.png");
+  
+  // 2. v33 vs NCh comparison
+  //TCanvas *c_v33_Nch = new TCanvas("c_v33_Nch", "v33 vs Nch Comparison", 800, 600);
+  
+  //TH2D *hframe_v33_Nch = new TH2D("hframe_v33_Nch", ";N_{ch};v_{3}{3}", 100, 0, 80, 100, 0, 0.0032);
+  //hframe_v33_Nch->Draw();
+  
+  // TLegend *leg_v33_Nch = new TLegend(0.1, 0.6, 0.3, 0.9);
+  // for(int ifile = 0; ifile < 1; ifile++) {
+  //   gr_v33_Nch[ifile]->Draw("same p");
+  //   leg_v33_Nch->AddEntry(gr_v33_Nch[ifile], labels[ifile], "p");
+  // }
+  // leg_v33_Nch->Draw();
+  //c_v33_Nch->SaveAs("v33_Nch_comparison.png");
+  
+  // 3. v2 vs pT comparison
+  TCanvas *c_v2_pt = new TCanvas("c_v2_pt", "v2 vs pT Comparison", 800, 600);
+  
+  TH2D *hframe_pt = new TH2D("hframe_pt", ";p_{T} (GeV/c);v_{2}", 100, 0, 4, 100, 0, 0.0152);
+  hframe_pt->Draw();
+  TLegend *leg_pt = new TLegend(0.1, 0.6, 0.25, 0.9);
+  leg_pt->SetTextSize(0.030);
+  leg_pt->SetBorderSize(0);
+  for(int ifile = 0; ifile < 1; ifile++) {
+    gr_v2_pt[ifile]->Draw("same p");
+    leg_pt->AddEntry(gr_v2_pt[ifile], labels[ifile], "p");
+  }
+  leg_pt->Draw();
+  c_v2_pt->SaveAs("v2_pt_comparison.png");
+  
+  // 4. v3 vs pT comparison
+  // TCanvas *c_v3_pt = new TCanvas("c_v3_pt", "v3 vs pT Comparison", 800, 600);
+  // c_v3_pt->SetGridx();
+  // c_v3_pt->SetGridy();
+  
+  //TH2D *hframe_v3_pt = new TH2D("hframe_v3_pt", ";p_{T} (GeV/c);v_{3}", 100, 0, 4, 100, 0, 0.0032);
+  //hframe_v3_pt->Draw();
+  
+  // TLegend *leg_v3_pt = new TLegend(0.6, 0.7, 0.85, 0.85);
+  // for(int ifile = 0; ifile < 1; ifile++) {
+  //   gr_v3_pt[ifile]->Draw("same p");
+  //   leg_v3_pt->AddEntry(gr_v3_pt[ifile], labels[ifile], "p");
+  // }
+  // leg_v3_pt->Draw();
+  //c_v3_pt->SaveAs("v3_pt_comparison.png");
+  
+  // Save combined canvas with all four plots
+  TCanvas *c_combined = new TCanvas("c_combined", "Flow Coefficients Comparison", 1600, 1200);
+  c_combined->Divide(2, 2);
+  c_combined->cd(1);
+  hframe_Nch->Draw();
+  for(int ifile = 0; ifile < 1; ifile++) {
+    gr_v22_Nch[ifile]->Draw("same p");
+  }
+  leg_Nch->Draw();
+  
+  c_combined->cd(2);
+  // hframe_v33_Nch->Draw();
+  // for(int ifile = 0; ifile < 1; ifile++) {
+  //   gr_v33_Nch[ifile]->Draw("same p");
+  // }
+  // leg_v33_Nch->Draw();
+  
+  c_combined->cd(3);
+  hframe_pt->Draw();
+  for(int ifile = 0; ifile < 1; ifile++) {
+    gr_v2_pt[ifile]->Draw("same p");
+  }
+  leg_pt->Draw();
+  
+  c_combined->cd(4);
+  //hframe_v3_pt->Draw();
+  // for(int ifile = 0; ifile < 1; ifile++) {
+  //   gr_v3_pt[ifile]->Draw("same p");
+  // }
+  // leg_v3_pt->Draw();
+  
+  c_combined->SaveAs("flow_comparison_all.png");
+  
+  outfile->Close();
 }

@@ -509,7 +509,7 @@ void calc_flow_fn_longRange() {
     }
     leg->Draw();
     
-    cCombined->SaveAs("Fn_1.5_a0.8_b0.4.png");
+    cCombined->SaveAs("Fn_rebin_combined.png");
     
     // Save results to ROOT file
     TFile *outfile = new TFile("longRange_flow_combined.root", "recreate");
