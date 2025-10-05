@@ -168,7 +168,7 @@ void draw_nohFSI() {
     c1->cd(1);
     {
         gPad->SetTicks(1,1);
-        gPad->SetLogy();
+        //gPad->SetLogy();
         TH2D *axisFrame1 = new TH2D("axisFrame1", "", 100,-0.1, 2.99, 100, 0.002, 16);
         axisFrame1->GetYaxis()->SetTickLength(0.02);
         axisFrame1->GetXaxis()->SetTickLength(0.02);
@@ -176,7 +176,7 @@ void draw_nohFSI() {
         axisFrame1->GetYaxis()->SetLabelSize(0.070);
         axisFrame1->Draw("axis");
 
-        TString filename = "hist_outputnohFSI_new.root";
+        TString filename = "hist_outputnohFSI_hadd.root";
         TString histname = "hPiCh_dPhi0";
         TString datafile = "Pi_To.root";
 
@@ -225,7 +225,7 @@ void draw_nohFSI() {
     c1->cd(2);
     {
         gPad->SetTicks(1,1);
-        gPad->SetLogy();
+        //gPad->SetLogy();
         gPad->SetRightMargin(0.01);
         TH2D *axisFrame2 = new TH2D("axisFrame2", "", 100, -0.1, 2.99, 100, 0.002, 16);
         axisFrame2->GetYaxis()->SetTickLength(0.02);
@@ -234,7 +234,7 @@ void draw_nohFSI() {
         axisFrame2->GetYaxis()->SetLabelSize(0.070);
         axisFrame2->Draw("axis");
 
-        TString filename = "hist_outputnohFSI_new.root";
+        TString filename = "hist_outputnohFSI_hadd.root";
         TString histname = "hPiCh_dPhi1";
         TString datafile = "Pi_Tr.root";
 
@@ -275,7 +275,7 @@ void draw_nohFSI() {
     c1->cd(3);
     {
         gPad->SetTicks(1,1);
-        gPad->SetLogy();
+        //gPad->SetLogy();
         TH2D *axisFrame3 = new TH2D("axisFrame3", "", 100, -0.1, 2.99, 100, 0.0007, 1.6);
         axisFrame3->GetYaxis()->SetTickLength(0.02);
         axisFrame3->GetXaxis()->SetTickLength(0.02);
@@ -289,7 +289,7 @@ void draw_nohFSI() {
         label3->SetTextAlign(22);
         label3->DrawLatexNDC(0.05, 0.5, "dN/(dp_{T}dy)(GeV/c)^{-1}");
 
-        TString filename = "hist_outputnohFSI_new.root";
+        TString filename = "hist_outputnohFSI_hadd.root";
         TString histname = "hKCh_dPhi0";
         TString datafile = "K_To.root";
 
@@ -321,7 +321,7 @@ void draw_nohFSI() {
     c1->cd(4);
     {
         gPad->SetTicks(1,1);
-        gPad->SetLogy();
+        //gPad->SetLogy();
         gPad->SetRightMargin(0.01);
         TH2D *axisFrame4 = new TH2D("axisFrame4", "", 100, -0.1, 2.99, 100, 0.0007, 1.6);
         axisFrame4->GetYaxis()->SetTickLength(0.02);
@@ -330,7 +330,7 @@ void draw_nohFSI() {
         axisFrame4->GetYaxis()->SetLabelSize(0.070);
         axisFrame4->Draw("axis");
 
-        TString filename = "hist_outputnohFSI_new.root";
+        TString filename = "hist_outputnohFSI_hadd.root";
         TString histname = "hKCh_dPhi1";
         TString datafile = "K_Tr.root";
 
@@ -359,7 +359,7 @@ void draw_nohFSI() {
     // ============= Pad 5 =============
     c1->cd(5);
     {
-        gPad->SetLogy();
+        //gPad->SetLogy();
         TH2D *axisFrame5 = new TH2D("axisFrame5", "", 100, -0.1, 2.99, 100, 0.0003, 0.6);
         axisFrame5->GetYaxis()->SetTickLength(0.02);
         axisFrame5->GetXaxis()->SetTickLength(0.02);
@@ -367,15 +367,14 @@ void draw_nohFSI() {
         axisFrame5->GetYaxis()->SetLabelSize(0.060);
         axisFrame5->Draw("axis");
 
-        TString filename = "hist_outputnohFSI_new.root";
+        TString filename = "hist_outputnohFSI_hadd.root";
         TString histname = "hProton_dPhi0";
         TString datafile = "P_To.root";
-        TPaveText *text6 = new TPaveText(0.535, 0.05, 0.685, 0.06, "NDC");
-        text6->AddText("p_{T}(GeV/c)");
-        text6->SetFillColor(0);
-        text6->SetTextSize(0.08);
-        text6->SetTextAlign(22);
-        text6->Draw("same");
+TLatex *text2 = new TLatex(0.52, 0.06, "p_{T} (GeV/c)");
+text2->SetNDC();
+text2->SetTextSize(0.08);
+text2->SetTextAlign(22);
+text2->Draw();
         TH1D* hist_all = getCentPtProjectionsAll(filename, histname);
         TGraphErrors* graph_all = drawConnectedPoints(hist_all, colors[0], markerStyles[0]);
         graph_all->Draw("LP");
@@ -403,7 +402,7 @@ void draw_nohFSI() {
     // ============= Pad 6 =============
     c1->cd(6);
     {
-        gPad->SetLogy();
+        //gPad->SetLogy();
         gPad->SetRightMargin(0.01);
         TH2D *axisFrame6 = new TH2D("axisFrame6", "", 100, -0.1, 2.99, 100,  0.0003, 0.6);
         axisFrame6->GetYaxis()->SetTickLength(0.02);
@@ -413,14 +412,13 @@ void draw_nohFSI() {
         axisFrame6->Draw("axis");
 
 
-        TPaveText *text6 = new TPaveText(0.435, 0.05, 0.585, 0.06, "NDC");
-        text6->AddText("p_{T}(GeV/c)");
-        text6->SetFillColor(0);
-        text6->SetTextSize(0.08);
-        text6->SetTextAlign(22);
-        text6->Draw("same");
+TLatex *text2 = new TLatex(0.52, 0.06, "p_{T} (GeV/c)");
+text2->SetNDC();
+text2->SetTextSize(0.08);
+text2->SetTextAlign(22);
+text2->Draw();
 
-        TString filename = "hist_outputnohFSI_new.root";
+        TString filename = "hist_outputnohFSI_hadd.root";
         TString histname = "hProton_dPhi1";
         TString datafile = "P_Tr.root";
 
@@ -446,6 +444,6 @@ void draw_nohFSI() {
         addText1(0.90, 0.22, "(f)");
     }
 
-    c1->SaveAs("pi_k_p_nohFSI.png");
-    c1->SaveAs("pi_k_p_nohFSI.pdf");
+    c1->SaveAs("pi_k_p_nohFSI_hadd.png");
+    c1->SaveAs("pi_k_p_nohFSI_hadd.pdf");
 }

@@ -61,7 +61,7 @@ void draw() {
         if (piToward3) piToward3->Draw("LP same");
         
         addText(0.50, 0.9, "Toward", 0.10);
-        addText(0.92, 0.03, "(a)",0.06);
+        addText(0.92, 0.03, "(a)",0.07);
     }
 
     // 第二子图: Transverse区域 - π介子
@@ -95,13 +95,13 @@ void draw() {
         if (piTransverse3) piTransverse3->Draw("LP same");
         
         addText(0.33, 0.9, "Transverse", 0.10);
-        addText(0.90, 0.03, "(d)",0.06);
+        addText(0.90, 0.03, "(d)",0.07);
 
         TLegend *legend2 = new TLegend(0.07, 0.65, 0.72, 0.84);
         legend2->SetNColumns(1);
         legend2->SetFillStyle(0);
         legend2->SetBorderSize(0);
-        legend2->SetTextSize(0.08); 
+        legend2->SetTextSize(0.092); 
     
         TGraphErrors *marker1 = new TGraphErrors();
         marker1->SetMarkerStyle(24);
@@ -144,7 +144,7 @@ void draw() {
         
         addText(0.42, 0.9, "In-Jet", 0.10);
         addText(0.45, 0.10, "#pi^{+}+#pi^{-}", 0.15);
-        addText(0.90, 0.03, "(j)",0.06);
+        addText(0.90, 0.03, "(j)",0.07);
     }
 
     // 第四子图: Toward区域 - K介子
@@ -182,7 +182,7 @@ void draw() {
         label1->SetTextAngle(90);
         label1->SetTextAlign(22);
         label1->DrawLatexNDC(0.05, 0.54, "<p_{T}>(GeV/c)");
-        addText(0.92, 0.03, "(b)",0.06);
+        addText(0.92, 0.03, "(b)",0.07);
     }
 
     // 第五子图: Transverse区域 - K介子
@@ -214,7 +214,7 @@ void draw() {
         if (kTransverse1) kTransverse1->Draw("P same");
         if (kTransverse2) kTransverse2->Draw("LP same");
         if (kTransverse3) kTransverse3->Draw("LP same");
-        addText(0.90, 0.03, "(e)",0.06);
+        addText(0.90, 0.03, "(e)",0.07);
     }
 
     // 第六子图: In-Jet区域 - K介子
@@ -248,7 +248,7 @@ void draw() {
         if (kInJet3) kInJet3->Draw("LP same");
 
         addText(0.45, 0.13, "K^{+}+K^{-}", 0.15);
-        addText(0.90, 0.03, "(h)",0.06);
+        addText(0.90, 0.03, "(h)",0.07);
     }
 
     // 第七子图: Toward区域 - 质子
@@ -280,7 +280,7 @@ void draw() {
         if (protonToward1) protonToward1->Draw("P same");
         if (protonToward2) protonToward2->Draw("LP same");
         if (protonToward3) protonToward3->Draw("LP same");
-        addText(0.92, 0.23, "(c)",0.05);
+        addText(0.92, 0.23, "(c)",0.06);
     }
 
     // 第八子图: Transverse区域 - 质子
@@ -313,13 +313,12 @@ void draw() {
         if (protonTransverse2) protonTransverse2->Draw("LP same");
         if (protonTransverse3) protonTransverse3->Draw("LP same");
         
-        TPaveText *text = new TPaveText(0.42, 0.01, 0.62, 0.1, "NDC");
-        text->AddText("R_{T}");
-        text->SetFillColor(0);
-        text->SetTextAlign(22); 
-        text->SetTextSize(0.12);
-        text->Draw("same");
-        addText(0.90, 0.23, "(f)",0.05);
+TLatex *text2 = new TLatex(0.53, 0.06, "R_{T}");
+text2->SetNDC();
+text2->SetTextSize(0.12);
+text2->SetTextAlign(22);
+text2->Draw();
+        addText(0.90, 0.23, "(f)",0.06);
     }
 
     // 第九子图: In-Jet区域 - 质子
@@ -351,16 +350,16 @@ void draw() {
         if (protonInJet2) protonInJet2->Draw("LP same");
        
         addText(0.45, 0.32, "p+#bar{p}", 0.15);
-        addText(0.90, 0.23, "(i)",0.05);
+        addText(0.90, 0.23, "(i)",0.06);
     }
 
     // 添加图例到第一个pad
     c1->cd(1);
-    TLegend *legend = new TLegend(0.2, 0.5, 0.85, 0.84);
+    TLegend *legend = new TLegend(0.20, 0.46, 0.81, 0.80);
     legend->SetNColumns(1);
     legend->SetFillStyle(0);
     legend->SetBorderSize(0);
-    legend->SetTextSize(0.08); 
+    legend->SetTextSize(0.085); 
 
     TGraphErrors *marker2 = new TGraphErrors();
     marker2->SetMarkerStyle(20);
@@ -368,7 +367,7 @@ void draw() {
     marker2->SetMarkerSize(1);
     marker2->SetLineWidth(2); 
     marker2->SetLineColor(kRed);
-    legend->AddEntry(marker2, "noFSI", "lp");
+    legend->AddEntry(marker2, "0mb w/o ART", "lp");
 
     TGraphErrors *marker3 = new TGraphErrors();
     marker3->SetMarkerStyle(21);
@@ -376,7 +375,7 @@ void draw() {
     marker3->SetMarkerSize(1);
     marker3->SetLineWidth(2); 
     marker3->SetLineColor(kBlue);
-    legend->AddEntry(marker3, "pFSI", "lp");
+    legend->AddEntry(marker3, "0.15mb w/o ART", "lp");
 
     TGraphErrors *marker4 = new TGraphErrors();
     marker4->SetMarkerStyle(22);
@@ -384,7 +383,7 @@ void draw() {
     marker4->SetMarkerSize(1);
     marker4->SetLineWidth(2); 
     marker4->SetLineColor(kBlack);
-    legend->AddEntry(marker4, "allFSI", "lp");
+    legend->AddEntry(marker4, "0.15mb w/ ART", "lp");
     legend->Draw(); 
 
     c1->Update();

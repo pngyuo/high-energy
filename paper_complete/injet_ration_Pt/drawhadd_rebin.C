@@ -128,6 +128,12 @@ void addText4(Double_t x, Double_t y, const char* text) {
     latex->SetTextSize(0.15);  // 设置字体大小
     latex->Draw();
 }
+void addText6(Double_t x, Double_t y, const char* text) {
+    TLatex* latex = new TLatex(x, y, text);
+    latex->SetNDC(kTRUE);  // 将坐标转换为百分比
+    latex->SetTextSize(0.07);  // 设置字体大小
+    latex->Draw();
+}
 
 void drawGraphs(TVirtualPad *pad, const std::vector<TH1*>& projections1, 
                 std::vector<TH1*> projections2, 
@@ -135,7 +141,7 @@ void drawGraphs(TVirtualPad *pad, const std::vector<TH1*>& projections1,
                 std::vector<TH1*> projections4, 
                 const std::vector<Color_t>& colors, 
                 const std::vector<Style_t>& markerStyles,
-                int rebinFactor = 2) {
+                int rebinFactor = 1) {
     pad->cd(); // 切换到当前子画布
     for (size_t i = 0; i < projections1.size(); ++i) {
         TH1* hist1 = rebinHistogramThreshold(projections1[i], 2.5, rebinFactor);
@@ -205,7 +211,7 @@ void drawhadd_rebin() {
         label1->SetTextAngle(90);
         label1->SetTextAlign(22);
         label1->DrawLatexNDC(0.05, 0.44, "#Kappa/#pi");
-        addText5(0.79, 0.90, "noFSI");
+        addText5(0.58, 0.90, "0mb w/o ART");
         addText5(0.24, 0.90, "In-Jet");
 
         std::vector<Color_t> colors1 = {kBlack, kRed, kBlue, kMagenta};
@@ -236,7 +242,7 @@ void drawhadd_rebin() {
         projections3.push_back(hist3_1);
 
         drawGraphs(gPad, projections, projections1, projections2, projections3, colors1, markerStyles1,rebinFactor);
-        addText2(0.92, 0.03, "(a)");
+        addText6(0.92, 0.03, "(a)");
     }
 
     // 第二子图 (K/π, no hadronic FSI)
@@ -250,7 +256,7 @@ void drawhadd_rebin() {
         axisFrame2->GetYaxis()->SetLabelSize(0.065);
         axisFrame2->Draw("axis");
 
-        addText5(0.76, 0.90, "pFSI");
+        addText5(0.39, 0.90, "0.15mb w/o ART");
 
         std::vector<Color_t> colors2 = {kBlack, kRed, kBlue, kMagenta};
         std::vector<Style_t> markerStyles2 = {20, 20, 21, 22};
@@ -286,7 +292,7 @@ void drawhadd_rebin() {
         legend2->SetFillStyle(0);
         legend2->SetBorderSize(0);
         legend2->SetMargin(0.20);
-        legend2->SetTextSize(0.078);
+        legend2->SetTextSize(0.090);
   
         TGraphErrors *marker1_2 = new TGraphErrors();
         marker1_2->SetMarkerStyle(20);
@@ -304,7 +310,7 @@ void drawhadd_rebin() {
         marker2_2->SetLineColor(kRed);
         legend2->AddEntry(marker2_2, "0.7<R_{T}<1.1", "lp");
         legend2->Draw(); 
-        addText2(0.90, 0.03, "(c)");
+        addText6(0.90, 0.03, "(c)");
     }
 
     // 第三子图 (K/π, all FSI)
@@ -318,7 +324,7 @@ void drawhadd_rebin() {
         axisFrame3->GetXaxis()->SetLabelSize(0.065);
         axisFrame3->GetYaxis()->SetLabelSize(0.065);
         axisFrame3->Draw("axis");
-        addText5(0.74, 0.90, "allFSI");
+        addText5(0.42, 0.90, "0.15mb w/ ART");
 
         std::vector<Color_t> colors3 = {kBlack, kRed, kBlue, kMagenta};
         std::vector<Style_t> markerStyles3 = {20, 20, 21, 22};
@@ -348,7 +354,7 @@ void drawhadd_rebin() {
         projections3.push_back(hist3_1);
 
         drawGraphs(gPad, projections, projections1, projections2, projections3, colors3, markerStyles3,rebinFactor);
-        addText2(0.90, 0.03, "(e)");
+        addText6(0.90, 0.03, "(e)");
     }
 
     // ================ 第二行：p/π ================
@@ -398,7 +404,7 @@ void drawhadd_rebin() {
         projections3.push_back(hist2_1);
         projections3.push_back(hist3_1);
         drawGraphs(gPad, projections, projections1, projections2, projections3, colors4, markerStyles4,rebinFactor);
-        addText(0.92, 0.23, "(b)");
+        addText2(0.92, 0.23, "(b)");
     }
 
     // 第五子图 (p/π, no hadronic FSI)
@@ -412,12 +418,11 @@ void drawhadd_rebin() {
         axisFrame5->GetYaxis()->SetLabelSize(0.055);
         axisFrame5->Draw("axis");
 
-        TPaveText *text2 = new TPaveText(0.45, 0.05, 0.6, 0.06, "NDC");
-        text2->AddText("p_{T}(GeV/c)");
-        text2->SetFillColor(0);
-        text2->SetTextSize(0.08);
-        text2->SetTextAlign(22);
-        text2->Draw("same");
+TLatex *text2 = new TLatex(0.53, 0.06, "p_{T} (GeV/c)");
+text2->SetNDC();
+text2->SetTextSize(0.08);
+text2->SetTextAlign(22);
+text2->Draw();
 
         std::vector<Color_t> colors5 = {kBlack, kRed, kBlue, kMagenta};
         std::vector<Style_t> markerStyles5 = {20, 20, 21, 22};
@@ -449,7 +454,7 @@ void drawhadd_rebin() {
         projections3.push_back(hist3_1);
 
         drawGraphs(gPad, projections, projections1, projections2, projections3, colors5, markerStyles5,rebinFactor);
-        addText(0.90, 0.23, "(d)");
+        addText2(0.90, 0.23, "(d)");
     }
 
     // 第六子图 (p/π, all FSI)
@@ -492,7 +497,7 @@ void drawhadd_rebin() {
         projections3.push_back(hist3_1);
 
         drawGraphs(gPad, projections, projections1, projections2, projections3, colors6, markerStyles6,rebinFactor);
-        addText(0.90, 0.23, "(f)");
+        addText2(0.90, 0.23, "(f)");
     }
 
     c1->SaveAs("K_and_P_hadd_rebin_new.png");

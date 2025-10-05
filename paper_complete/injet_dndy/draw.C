@@ -82,6 +82,27 @@ void addText4(Double_t x, Double_t y, const char* text) {
     latex->Draw();
 }
 
+void addText6(Double_t x, Double_t y, const char* text) {
+    TLatex* latex = new TLatex(x, y, text);
+    latex->SetNDC(kTRUE);
+    latex->SetTextSize(0.07);
+    latex->Draw();
+}
+
+void addText7(Double_t x, Double_t y, const char* text) {
+    TLatex* latex = new TLatex(x, y, text);
+    latex->SetNDC(kTRUE);
+    latex->SetTextSize(0.14);
+    latex->Draw();
+}
+
+void addText8(Double_t x, Double_t y, const char* text) {
+    TLatex* latex = new TLatex(x, y, text);
+    latex->SetNDC(kTRUE);
+    latex->SetTextSize(0.09);
+    latex->Draw();
+}
+
 double averageNT = 0.0;
 
 TH1D* getCentPtProjections(const TString& filename, const TString& histname, double& averageNT, int rebinFactor1, int rebinFactor2) {
@@ -190,11 +211,35 @@ void draw() {
         int rebinFactor2 = 2;
         double averageNT;
 
+        TLegend* legend = new TLegend(0.60, 0.27, 1.13, 0.52);
+        legend->SetNColumns(1);
+        legend->SetFillStyle(0);
+        legend->SetBorderSize(0);
+        legend->SetTextSize(0.082);
+
+        TGraphErrors* marker1 = new TGraphErrors();
+        marker1->SetMarkerStyle(20);
+        marker1->SetMarkerColor(kBlack);
+        marker1->SetMarkerSize(1);
+        marker1->SetLineWidth(2);
+        marker1->SetLineColor(kBlack);
+        legend->AddEntry(marker1, "Toward", "lp");
+
+        TGraphErrors* marker2 = new TGraphErrors();
+        marker2->SetMarkerStyle(20);
+        marker2->SetMarkerColor(kRed);
+        marker2->SetMarkerSize(1);
+        marker2->SetLineWidth(2);
+        marker2->SetLineColor(kRed);
+        legend->AddEntry(marker2, "Transverse", "lp");
+        legend->Draw();
+
         TH1D* projectionsToward = getCentPtProjections(filename, histnameToward, averageNT, rebinFactor1, rebinFactor2);
         TH1D* projectionsTransverse = getCentPtProjections(filename, histnameTransverse, averageNT, rebinFactor1, rebinFactor2);
         drawGraphs(projectionsToward, projectionsTransverse, gPad, averageNT);
-        addText5(0.52, 0.90, "noFSI");
-        addText2(0.92, 0.03, "(a)");
+        addText5(0.6, 0.90, "0mb w/o ART");
+        addText6(0.92, 0.03, "(a)");
+        addText4(0.23, 0.85, "#pi^{+}+#pi^{-}");
     }
 
     {
@@ -219,31 +264,9 @@ void draw() {
         TH1D* projectionsToward = getCentPtProjections(filename, histnameToward, averageNT, rebinFactor1, rebinFactor2);
         TH1D* projectionsTransverse = getCentPtProjections(filename, histnameTransverse, averageNT, rebinFactor1, rebinFactor2);
         drawGraphs(projectionsToward, projectionsTransverse, gPad, averageNT);
-        addText5(0.44, 0.90, "pFSI");
-        addText4(0.40, 0.13, "#pi^{+}+#pi^{-}");
+        addText5(0.42, 0.90, "0.15mb w/o ART");
 
-        TLegend* legend = new TLegend(0.02, 0.65, 0.62, 0.90);
-        legend->SetNColumns(1);
-        legend->SetFillStyle(0);
-        legend->SetBorderSize(0);
-
-        TGraphErrors* marker1 = new TGraphErrors();
-        marker1->SetMarkerStyle(20);
-        marker1->SetMarkerColor(kBlack);
-        marker1->SetMarkerSize(1);
-        marker1->SetLineWidth(2);
-        marker1->SetLineColor(kBlack);
-        legend->AddEntry(marker1, "Toward", "lp");
-
-        TGraphErrors* marker2 = new TGraphErrors();
-        marker2->SetMarkerStyle(20);
-        marker2->SetMarkerColor(kRed);
-        marker2->SetMarkerSize(1);
-        marker2->SetLineWidth(2);
-        marker2->SetLineColor(kRed);
-        legend->AddEntry(marker2, "Transverse", "lp");
-        legend->Draw();
-        addText2(0.90, 0.03, "(d)");
+        addText6(0.90, 0.03, "(d)");
     }
 
     {
@@ -269,8 +292,8 @@ void draw() {
         TH1D* projectionsToward = getCentPtProjections(filename, histnameToward, averageNT, rebinFactor1, rebinFactor2);
         TH1D* projectionsTransverse = getCentPtProjections(filename, histnameTransverse, averageNT, rebinFactor1, rebinFactor2);
         drawGraphs(projectionsToward, projectionsTransverse, gPad, averageNT);
-        addText5(0.42, 0.90, "allFSI");
-        addText2(0.90, 0.03, "(j)");
+        addText5(0.45, 0.90, "0.15mb w/ ART");
+        addText6(0.90, 0.03, "(j)");
     }
 
     // 第二行：p±
@@ -302,7 +325,8 @@ void draw() {
         TH1D* projectionsToward = getCentPtProjections(filename, histnameToward, averageNT, rebinFactor1, rebinFactor2);
         TH1D* projectionsTransverse = getCentPtProjections(filename, histnameTransverse, averageNT, rebinFactor1, rebinFactor2);
         drawGraphs(projectionsToward, projectionsTransverse, gPad, averageNT);
-        addText2(0.92, 0.03, "(b)");
+        addText6(0.92, 0.03, "(b)");
+        addText4(0.23, 0.85, "#Kappa^{+}+#Kappa^{-}");
 
     }
 
@@ -328,8 +352,7 @@ void draw() {
         TH1D* projectionsToward = getCentPtProjections(filename, histnameToward, averageNT, rebinFactor1, rebinFactor2);
         TH1D* projectionsTransverse = getCentPtProjections(filename, histnameTransverse, averageNT, rebinFactor1, rebinFactor2);
         drawGraphs(projectionsToward, projectionsTransverse, gPad, averageNT);
-        addText4(0.40, 0.13, "#Kappa^{+}+#Kappa^{-}");
-        addText2(0.90, 0.03, "(e)");
+        addText6(0.90, 0.03, "(e)");
     }
 
     {
@@ -355,7 +378,7 @@ void draw() {
         TH1D* projectionsToward = getCentPtProjections(filename, histnameToward, averageNT, rebinFactor1, rebinFactor2);
         TH1D* projectionsTransverse = getCentPtProjections(filename, histnameTransverse, averageNT, rebinFactor1, rebinFactor2);
         drawGraphs(projectionsToward, projectionsTransverse, gPad, averageNT);
-        addText2(0.90, 0.03, "(h)");
+        addText6(0.90, 0.03, "(h)");
     }
 
     // 第三行：π±
@@ -381,7 +404,8 @@ void draw() {
         TH1D* projectionsToward = getCentPtProjections(filename, histnameToward, averageNT, rebinFactor1, rebinFactor2);
         TH1D* projectionsTransverse = getCentPtProjections(filename, histnameTransverse, averageNT, rebinFactor1, rebinFactor2);
         drawGraphs(projectionsToward, projectionsTransverse, gPad, averageNT);
-        addText1(0.92, 0.23, "(c)");
+        addText2(0.92, 0.23, "(c)");
+        addText7(0.23, 0.87, "p+#bar{p}");
     }
 
     {
@@ -407,15 +431,12 @@ void draw() {
         TH1D* projectionsTransverse = getCentPtProjections(filename, histnameTransverse, averageNT, rebinFactor1, rebinFactor2);
         drawGraphs(projectionsToward, projectionsTransverse, gPad, averageNT);
 
-        addText4(0.40, 0.28, "p+#bar{p}");
-
-        TPaveText* text = new TPaveText(0.42, 0.05, 0.595, 0.06, "NDC");
-        text->AddText("R_{T}");
-        text->SetFillColor(0);
-        text->SetTextSize(0.12);
-        text->SetTextAlign(22);
-        text->Draw("same");
-        addText1(0.90, 0.23, "(f)");
+TLatex *text2 = new TLatex(0.53, 0.06, "R_{T}");
+text2->SetNDC();
+text2->SetTextSize(0.12);
+text2->SetTextAlign(22);
+text2->Draw();
+        addText2(0.90, 0.23, "(f)");
     }
 
     {
@@ -441,7 +462,7 @@ void draw() {
         TH1D* projectionsToward = getCentPtProjections(filename, histnameToward, averageNT, rebinFactor1, rebinFactor2);
         TH1D* projectionsTransverse = getCentPtProjections(filename, histnameTransverse, averageNT, rebinFactor1, rebinFactor2);
         drawGraphs(projectionsToward, projectionsTransverse, gPad, averageNT);
-        addText1(0.90, 0.23, "(i)");
+        addText2(0.90, 0.23, "(i)");
     }
 
     c1->SaveAs("pi_k_p_Yield_RT.png");

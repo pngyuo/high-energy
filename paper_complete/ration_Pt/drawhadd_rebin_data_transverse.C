@@ -132,6 +132,19 @@ void addText4(Double_t x, Double_t y, const char* text) {
     latex->Draw();
 }
 
+void addText6(Double_t x, Double_t y, const char* text) {
+    TLatex* latex = new TLatex(x, y, text);
+    latex->SetNDC(kTRUE);
+    latex->SetTextSize(0.09);
+    latex->Draw();
+}
+
+void addText5(Double_t x, Double_t y, const char* text) {
+    TLatex* latex = new TLatex(x, y, text);
+    latex->SetNDC(kTRUE);
+    latex->SetTextSize(0.07);
+    latex->Draw();
+}
 // 绘制图形：先分区处理直方图，再计算比例
 void drawGraphs(const std::vector<TH1*>& projections1, 
                 const std::vector<TH1*>& projections2, 
@@ -220,38 +233,16 @@ void drawhadd_rebin_data_transverse() {
         graph2->SetMarkerColor(graph2->GetLineColor());
         graph2->Draw("P same"); 
 
-        TLegend *legend2 = new TLegend(0.6, 0.08, 1.25, 0.35);
-        legend2->SetNColumns(1);
-        legend2->SetFillStyle(0);
-        legend2->SetBorderSize(0);
-        legend2->SetMargin(0.20);
-        legend2->SetTextSize(0.078);
-
-        TGraphErrors *marker1_2 = new TGraphErrors();
-        marker1_2->SetMarkerStyle(20);
-        marker1_2->SetMarkerColor(kBlack);
-        marker1_2->SetLineColor(kBlack);
-        marker1_2->SetLineWidth(2);
-        legend2->AddEntry(marker1_2, "0<R_{T}<0.5", "lp");
-
-        TGraphErrors *marker2_2 = new TGraphErrors();
-        marker2_2->SetMarkerStyle(20);
-        marker2_2->SetMarkerColor(kRed);
-        marker2_2->SetLineColor(kRed);
-        marker2_2->SetLineWidth(2);
-        legend2->AddEntry(marker2_2, "2.5<R_{T}<5", "lp");
-        legend2->Draw();
-        addText3(0.65, 0.35, "AMPT");
-        addText4(0.28, 0.90, "Transverse");
-        addText4(0.75, 0.90, "noFSI");
-        addText2(0.92, 0.03, "(a)");
+        addText6(0.23, 0.90, "Transverse");
+        addText6(0.62, 0.90, "0mb w/o ART");
+        addText5(0.92, 0.03, "(a)");
     }
 
     // 第二列：K/π (nohFSI)
     {
         c1->cd(2);
         gPad->SetTicks(1, 1);
-        TH2D *axisFrame2 = new TH2D("axisFrame2", "; ; ", 100, -0.1, 2.99, 100, 0.01, 0.53);
+        TH2D *axisFrame2 = new TH2D("axisFrame2", "; ; ", 100, -0.1, 2.99, 100,  0.01, 0.53);
         axisFrame2->GetYaxis()->SetTickLength(0.02);
         axisFrame2->GetXaxis()->SetTickLength(0.02);
         axisFrame2->GetXaxis()->SetLabelSize(0.065);
@@ -286,8 +277,8 @@ void drawhadd_rebin_data_transverse() {
         graph2->SetMarkerColor(graph2->GetLineColor());
         graph2->Draw("P same"); 
 
-        addText4(0.75, 0.90, "pFSI");
-        addText2(0.90, 0.03, "(c)");
+        addText6(0.45, 0.90, "0.15mb w/o ART");
+        addText5(0.90, 0.03, "(c)");
     }
 
     // 第三列：K/π (allFSI)
@@ -295,14 +286,14 @@ void drawhadd_rebin_data_transverse() {
         c1->cd(3);
         gPad->SetTicks(1, 1);
         gPad->SetRightMargin(0.01);
-        TH2D *axisFrame3 = new TH2D("axisFrame3", "; ; ", 100, -0.1, 2.99, 100,0.01, 0.53);
+        TH2D *axisFrame3 = new TH2D("axisFrame3", "; ; ", 100, -0.1, 2.99, 100, 0.01, 0.53);
         axisFrame3->GetYaxis()->SetTickLength(0.02);
         axisFrame3->GetXaxis()->SetTickLength(0.02);
         axisFrame3->GetXaxis()->SetLabelSize(0.065);
         axisFrame3->GetYaxis()->SetLabelSize(0.065);
         axisFrame3->Draw("axis");
 
-        addText4(0.71, 0.90, "allFSI");
+        addText6(0.48, 0.90, "0.15mb w/ ART");
 
         TH1F *hist = (TH1F*)file->Get("histProjX_1_KCh_allFSI");
         TH1F *hist1 = (TH1F*)file->Get("histProjX_2_KCh_allFSI");
@@ -332,32 +323,7 @@ void drawhadd_rebin_data_transverse() {
         graph2->SetMarkerColor(graph2->GetLineColor());
         graph2->Draw("P same"); 
 
-        addText3(0.59, 0.35, "ALICE");
-
-        TLegend *legend2 = new TLegend(0.55, 0.08, 1.2, 0.35);
-        legend2->SetNColumns(1);
-        legend2->SetFillStyle(0);
-        legend2->SetBorderSize(0);
-        legend2->SetMargin(0.20);
-        legend2->SetTextSize(0.078);
-
-        TGraphErrors *marker1_2 = new TGraphErrors();
-        marker1_2->SetMarkerStyle(24);
-        marker1_2->SetMarkerColor(kBlack);
-        marker1_2->SetMarkerSize(1.3);
-        marker1_2->SetLineWidth(2); 
-        marker1_2->SetLineColor(kBlack);
-        legend2->AddEntry(marker1_2, "0<R_{T}<0.5", "p");
-
-        TGraphErrors *marker2_2 = new TGraphErrors();
-        marker2_2->SetMarkerStyle(24);
-        marker2_2->SetMarkerColor(kRed);
-        marker2_2->SetMarkerSize(1.3);
-        marker2_2->SetLineWidth(2); 
-        marker2_2->SetLineColor(kRed);
-        legend2->AddEntry(marker2_2, "2.5<R_{T}<5", "p");
-        legend2->Draw();
-        addText2(0.90, 0.03, "(e)");
+        addText5(0.90, 0.03, "(e)");
     }
 
     // 第四列：p/π (noFSI)
@@ -396,6 +362,29 @@ void drawhadd_rebin_data_transverse() {
         graph1->SetMarkerColor(graph1->GetLineColor());
         graph1->Draw("P"); 
 
+        TLegend *legend2 = new TLegend(0.21, 0.68, 0.86, 0.89);
+        legend2->SetNColumns(1);
+        legend2->SetFillStyle(0);
+        legend2->SetBorderSize(0);
+        legend2->SetMargin(0.20);
+        legend2->SetTextSize(0.068);
+
+        TGraphErrors *marker1_2 = new TGraphErrors();
+        marker1_2->SetMarkerStyle(20);
+        marker1_2->SetMarkerColor(kBlack);
+        marker1_2->SetLineColor(kBlack);
+        marker1_2->SetLineWidth(2);
+        legend2->AddEntry(marker1_2, "0<R_{T}<0.5", "lp");
+
+        TGraphErrors *marker2_2 = new TGraphErrors();
+        marker2_2->SetMarkerStyle(20);
+        marker2_2->SetMarkerColor(kRed);
+        marker2_2->SetLineColor(kRed);
+        marker2_2->SetLineWidth(2);
+        legend2->AddEntry(marker2_2, "2.5<R_{T}<5", "lp");
+        legend2->Draw();
+        addText5(0.26, 0.89, "AMPT");
+
         TString filenames1= "p_pi_ratio_transverse_255.root";
         TFile* infile2 = new TFile(filenames1, "READ");
         TGraphErrors *graph2 = (TGraphErrors*)infile2->Get("Pt");
@@ -404,7 +393,7 @@ void drawhadd_rebin_data_transverse() {
         graph2->SetLineColor(kRed);
         graph2->SetMarkerColor(graph2->GetLineColor());
         graph2->Draw("P same"); 
-        addText(0.92, 0.23, "(b)");
+        addText2(0.92, 0.23, "(b)");
     }
 
     // 第五列：p/π (nohFSI)
@@ -418,12 +407,11 @@ void drawhadd_rebin_data_transverse() {
         axisFrame5->GetYaxis()->SetLabelSize(0.055);
         axisFrame5->Draw("axis");
 
-        TPaveText *text2 = new TPaveText(0.45, 0.05, 0.6, 0.06, "NDC");
-        text2->AddText("p_{T}(GeV/c)");
-        text2->SetFillColor(0);
-        text2->SetTextSize(0.08);
-        text2->SetTextAlign(22);
-        text2->Draw("same");
+TLatex *text2 = new TLatex(0.53, 0.06, "p_{T} (GeV/c)");
+text2->SetNDC();
+text2->SetTextSize(0.08);
+text2->SetTextAlign(22);
+text2->Draw();
 
         TH1F *hist8 = (TH1F*)file->Get("histProjX_1_Proton_nohFSI");
         TH1F *hist9 = (TH1F*)file->Get("histProjX_2_Proton_nohFSI");
@@ -452,7 +440,33 @@ void drawhadd_rebin_data_transverse() {
         graph2->SetLineColor(kRed);
         graph2->SetMarkerColor(graph2->GetLineColor());
         graph2->Draw("P same"); 
-        addText(0.90, 0.23, "(d)");
+        addText2(0.90, 0.23, "(d)");
+
+        addText5(0.09, 0.89, "ALICE");
+
+        TLegend *legend2 = new TLegend(0.05, 0.68, 0.7, 0.89);
+        legend2->SetNColumns(1);
+        legend2->SetFillStyle(0);
+        legend2->SetBorderSize(0);
+        legend2->SetMargin(0.20);
+        legend2->SetTextSize(0.068);
+
+        TGraphErrors *marker1_2 = new TGraphErrors();
+        marker1_2->SetMarkerStyle(24);
+        marker1_2->SetMarkerColor(kBlack);
+        marker1_2->SetMarkerSize(1.3);
+        marker1_2->SetLineWidth(2); 
+        marker1_2->SetLineColor(kBlack);
+        legend2->AddEntry(marker1_2, "0<R_{T}<0.5", "p");
+
+        TGraphErrors *marker2_2 = new TGraphErrors();
+        marker2_2->SetMarkerStyle(24);
+        marker2_2->SetMarkerColor(kRed);
+        marker2_2->SetMarkerSize(1.3);
+        marker2_2->SetLineWidth(2); 
+        marker2_2->SetLineColor(kRed);
+        legend2->AddEntry(marker2_2, "2.5<R_{T}<5", "p");
+        legend2->Draw();
     }
 
     // 第六列：p/π (allFSI)
@@ -494,7 +508,7 @@ void drawhadd_rebin_data_transverse() {
         graph2->SetLineColor(kRed);
         graph2->SetMarkerColor(graph2->GetLineColor());
         graph2->Draw("P same"); 
-        addText(0.90, 0.23, "(f)");
+        addText2(0.90, 0.23, "(f)");
     }
 
     c1->SaveAs("pi_k_p_transverse_hadd_rebin_new_data.png");
