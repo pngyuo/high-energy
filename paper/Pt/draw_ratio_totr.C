@@ -19,7 +19,7 @@ TGraphErrors* drawConnectedPoints(TH1D* hist, Color_t color, Style_t markerStyle
     int count = 0; // 用于记录满足条件的点的数量
     for (int i = 1; i <= n; ++i) {
         double binCenter = hist->GetBinCenter(i);
-        if (binCenter < 3) { // 只保留 x < 3 的点
+        if (binCenter < 5) { // 只保留 x < 3 的点
             x[count] = binCenter;
             y[count] = hist->GetBinContent(i);
             ey[count] = hist->GetBinError(i);
@@ -162,13 +162,16 @@ TH1D* getCentPtProjectionsAll(const TString& filename, const TString& histname) 
 }
 
 TH1D* createRatioHistogram(TH1D* numerator, TH1D* denominator, const char* name) {
-    TH1D* ratio = (TH1D*)numerator->Clone(name);
+    double binEdge[10]={0, 0.2, 0.4, 0.6, 0.8, 1, 1.4, 2, 3, 5};
+    numerator=(TH1D*)numerator->Rebin(9, "hnew1", binEdge);
+    denominator=(TH1D*)denominator->Rebin(9, "hnew1", binEdge);
+   TH1D* ratio = (TH1D*)numerator->Clone(name);
     ratio->Divide(denominator);
     return ratio;
 }
 
 void draw_ratio_totr() {
-    TCanvas *c1 = new TCanvas("c1", "c1",400, 420);
+    TCanvas *c1 = new TCanvas("c1", "c1",600, 420);
     c1->SetTicks(1, 1);
     c1->SetMargin(0.17, 0.02, 0.18, 0.1);
     gStyle->SetOptStat(kFALSE);
@@ -186,10 +189,10 @@ void draw_ratio_totr() {
         axisFrame1->Draw("axis");
 
         TLatex *label = new TLatex();
-        label->SetTextSize(0.09);
+        label->SetTextSize(0.07);
         label->SetTextAngle(90);
         label->SetTextAlign(22);
-        label->DrawLatexNDC(0.045, 0.5, "To/Tr");
+        label->DrawLatexNDC(0.045, 0.5, "Toward/Transverse");
 
         TString filename = "hist_outputallFSI_liang.root";
         TString histname1 = "hPiCh_dPhi0";
@@ -225,7 +228,7 @@ for (int i = 0; i < projections_toward.size(); i++) {
         axisFrame1->Draw("axis same");
 
         // 创建图例
-        TLegend *legend = new TLegend(0.20, 0.55, 0.70, 0.75);
+        TLegend *legend = new TLegend(0.20, 0.60, 0.70, 0.80);
         legend->SetNColumns(1);
         legend->SetFillStyle(0);
         legend->SetBorderSize(0);
@@ -238,13 +241,12 @@ text2->SetTextSize(0.08);
 text2->SetTextAlign(22);
 text2->Draw();
 
-        addText5(0.25, 0.75, "AMPT");
+        legend->AddEntry(drawConnectedPoints(ratio_hists[0], colors[1], markerStyles[1]), "0<R_{T}<0.5 #times0.1", "lp");
         legend->AddEntry(graph_all, "R_{T}>0", "lp");
-        legend->AddEntry(drawConnectedPoints(ratio_hists[0], colors[1], markerStyles[1]), "0<R_{T}<0.5", "lp");
+        // legend->AddEntry(drawConnectedPoints(ratio_hists[0], colors[1], markerStyles[1]), "0<R_{T}<0.5 #times0.1", "lp");
         legend->AddEntry(drawConnectedPoints(ratio_hists[1], colors[2], markerStyles[2]), "2.5<R_{T}<5", "lp");
         legend->Draw();
-        addText4(0.50, 0.81, "#pi^{+}+#pi^{-}");
-        addText1(0.92, 0.20, "(a)");
+        // addText1(0.92, 0.20, "(a)");
 
     c1->SaveAs("pi_totrratio.png");
     c1->SaveAs("pi_totrratio.pdf");

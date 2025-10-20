@@ -145,8 +145,77 @@ void addText5(Double_t x, Double_t y, const char* text) {
     latex->SetTextSize(0.07);
     latex->Draw();
 }
+
+std::vector<TH1D*> getCentPtProjections(const TString& filename, const TString& histname, const TString& suffix) {
+    TFile* infile = new TFile(filename, "READ");
+    TH3D* hist3D = (TH3D*)infile->Get(histname);
+
+    TH1D *chargedParticlesCount = (TH1D*)infile->Get("nTHist");
+    
+    double totalChargedParticles = 0; // 加权总和
+    double nEvents = 0;  // 总的事件数
+    for (int bin = 1; bin <= chargedParticlesCount->GetNbinsX(); bin++) {
+        double binCenter = chargedParticlesCount->GetXaxis()->GetBinCenter(bin); // 获取当前 bin 中心的 NT 值
+        double binContent = chargedParticlesCount->GetBinContent(bin);  // 获取当前 bin 的分布数量
+        totalChargedParticles += binCenter * binContent;  // 加权累加
+        nEvents += binContent;  // 累加事件数
+    }
+    double averageNT = totalChargedParticles / nEvents;  // 计算加权平均NT
+    std::cout << "averageNT: " << averageNT << std::endl;
+    std::vector<TH1D*> projections;
+    double rtRanges[2] = {0,2.5};  // RT 的范围
+    double rtUpperRanges[2] = {0.5,5};  // RT 上限
+  
+    for (int i = 0; i < 2; i++) {
+        double ntRangeLow = rtRanges[i] * averageNT;  // RT 转为 NT 的下限
+        double ntRangeUp = rtUpperRanges[i] * averageNT;  // RT 转为 NT 的上限
+
+        std::cout << "ntRangeLow: " << ntRangeLow << std::endl;
+        std::cout << "ntRangeUp: " << ntRangeUp << std::endl;
+
+        int binLow = hist3D->GetZaxis()->FindBin(ntRangeLow);  // NT 下限对应的 bin
+        int binUp = hist3D->GetZaxis()->FindBin(ntRangeUp);  // NT 上限对应的 bin;
+        binUp-=1;
+
+        std::cout << "RT Range[" << rtRanges[i] << ", " << rtUpperRanges[i] << "] mapped to NT Bins[" 
+             << binLow << ", " << binUp << "]" << std::endl;
+
+        TH1D* histProjX = hist3D->ProjectionX(Form("histProjX_%i_%s", i + 1, suffix.Data()), 1, hist3D->GetNbinsY(), binLow, binUp);
+        double totalEventsInRange = 0;
+        for (int binIndex = binLow; binIndex <= binUp; ++binIndex) {
+            double eventsWithParticleCount = chargedParticlesCount->GetBinContent(binIndex);
+            totalEventsInRange += eventsWithParticleCount;
+        }
+        histProjX->Scale(1.0 / totalEventsInRange, "width");
+        projections.push_back(histProjX);
+    }
+    return projections;
+}
+
+void drawGraphs(const std::vector<TH1D*>& projections1,const std::vector<TH1D*>& projections2, const std::vector<Color_t>& colors, const std::vector<Style_t>& markerStyles) {
+  for (size_t i = 0; i < projections1.size(); ++i) {
+    int rebinFactor=2;
+    TH1* hist1 = rebinHistogramThreshold(projections1[i], 2.5, rebinFactor);
+    TH1* hist2 = rebinHistogramThreshold(projections2[i], 2.5, rebinFactor);
+    Color_t color = colors[i];
+    Style_t markerStyle = markerStyles[i];
+
+     TH1D* ratioHist = (TH1D*)hist1->Clone();
+    ratioHist->Divide(hist2); // 除以hist4
+
+    // 绘制相减和相除的结果
+    TGraphErrors* graphRatio = drawConnectedPoints(ratioHist, color, markerStyle);
+
+    if(i == 0) {
+      graphRatio->Draw("LP");
+    } else {
+      graphRatio->Draw("LP same");
+    }
+  }
+}
+
 // 绘制图形：先分区处理直方图，再计算比例
-void drawGraphs(const std::vector<TH1*>& projections1, 
+void drawGraphs1(const std::vector<TH1*>& projections1, 
                 const std::vector<TH1*>& projections2, 
                 const std::vector<Color_t>& colors, 
                 const std::vector<Style_t>& markerStyles, 
@@ -205,15 +274,14 @@ void drawhadd_rebin_data_transverse() {
         label->SetTextAlign(22);
         label->DrawLatexNDC(0.05, 0.5, "#Kappa/#pi");
         
-        TH1F *hist = (TH1F*)file->Get("histProjX_1_KCh_noFSI");
-        TH1F *hist1 = (TH1F*)file->Get("histProjX_2_KCh_noFSI");
-        TH1F *hist2 = (TH1F*)file->Get("histProjX_1_PiCh_noFSI");
-        TH1F *hist3 = (TH1F*)file->Get("histProjX_2_PiCh_noFSI");
-        
-        std::vector<TH1*> projections = {hist, hist1};
-        std::vector<TH1*> projections1 = {hist2, hist3};
-        
-        drawGraphs(projections, projections1, colors, markerStyles, rebinFactor);
+        TString filename = "hist_outputnoFSI_hadd.root";
+        TString histname1 = "hKCh_dPhi1";
+        TString histname2 = "hPiCh_dPhi1";
+        gStyle->SetOptStat(kFALSE);
+
+        std::vector<TH1D*> projections = getCentPtProjections(filename, histname1, "KCh_noFSI");
+        std::vector<TH1D*> projections1 = getCentPtProjections(filename, histname2, "PiCh_noFSI");
+        drawGraphs(projections, projections1, colors, markerStyles);
         
         TString filenames= "k_pi_ratio_transverse_05.root";
         TFile* infile1 = new TFile(filenames, "READ");
@@ -242,22 +310,20 @@ void drawhadd_rebin_data_transverse() {
     {
         c1->cd(2);
         gPad->SetTicks(1, 1);
-        TH2D *axisFrame2 = new TH2D("axisFrame2", "; ; ", 100, -0.1, 2.99, 100,  0.01, 0.53);
+        TH2D *axisFrame2 = new TH2D("axisFrame2", "; ; ", 100, -0.1, 2.99, 100, 0.01, 0.53);
         axisFrame2->GetYaxis()->SetTickLength(0.02);
         axisFrame2->GetXaxis()->SetTickLength(0.02);
         axisFrame2->GetXaxis()->SetLabelSize(0.065);
         axisFrame2->GetYaxis()->SetLabelSize(0.065);
         axisFrame2->Draw("axis");
-
-        TH1F *hist = (TH1F*)file->Get("histProjX_1_KCh_nohFSI");
-        TH1F *hist1 = (TH1F*)file->Get("histProjX_2_KCh_nohFSI");
-        TH1F *hist2 = (TH1F*)file->Get("histProjX_1_PiCh_nohFSI");
-        TH1F *hist3 = (TH1F*)file->Get("histProjX_2_PiCh_nohFSI");
+        TString filename = "hist_outputnohFSI_hadd.root";
+        TString histname1 = "hKCh_dPhi1";
+        TString histname2 = "hPiCh_dPhi1";
+        gStyle->SetOptStat(kFALSE);
         
-        std::vector<TH1*> projections = {hist, hist1};
-        std::vector<TH1*> projections1 = {hist2, hist3};
-        
-        drawGraphs(projections, projections1, colors, markerStyles, rebinFactor);
+        std::vector<TH1D*> projections = getCentPtProjections(filename, histname1, "KCh_nohFSI");
+        std::vector<TH1D*> projections1 = getCentPtProjections(filename, histname2, "PiCh_nohFSI");
+        drawGraphs(projections, projections1, colors, markerStyles);
 
         TString filenames= "k_pi_ratio_transverse_05.root";
         TFile* infile1 = new TFile(filenames, "READ");
@@ -303,7 +369,7 @@ void drawhadd_rebin_data_transverse() {
         std::vector<TH1*> projections = {hist, hist1};
         std::vector<TH1*> projections1 = {hist2, hist3};
         
-        drawGraphs(projections, projections1, colors, markerStyles, rebinFactor);
+        drawGraphs1(projections, projections1, colors, markerStyles, rebinFactor);
 
         TString filenames= "k_pi_ratio_transverse_05.root";
         TFile* infile1 = new TFile(filenames, "READ");
@@ -343,15 +409,13 @@ void drawhadd_rebin_data_transverse() {
         label3->SetTextAlign(22);
         label3->DrawLatexNDC(0.05, 0.5, "p/#pi");
 
-        TH1F *hist4 = (TH1F*)file->Get("histProjX_1_Proton_noFSI");
-        TH1F *hist5 = (TH1F*)file->Get("histProjX_2_Proton_noFSI");
-        TH1F *hist6 = (TH1F*)file->Get("histProjX_1_PiCh_noFSI");
-        TH1F *hist7 = (TH1F*)file->Get("histProjX_2_PiCh_noFSI");
+        TString filename = "hist_outputnoFSI_hadd.root";
+        TString histname1 = "hProton_dPhi1";
+        TString histname2 = "hPiCh_dPhi1";
         
-        std::vector<TH1*> projections = {hist4, hist5};
-        std::vector<TH1*> projections1 = {hist6, hist7};
-        
-        drawGraphs(projections, projections1, colors, markerStyles, rebinFactor);
+        std::vector<TH1D*> projections = getCentPtProjections(filename, histname1, "Proton_noFSI");
+        std::vector<TH1D*> projections1 = getCentPtProjections(filename, histname2, "PiCh_noFSI");
+        drawGraphs(projections, projections1, colors, markerStyles);
 
         TString filenames= "p_pi_ratio_transverse_05.root";
         TFile* infile1 = new TFile(filenames, "READ");
@@ -413,15 +477,13 @@ text2->SetTextSize(0.08);
 text2->SetTextAlign(22);
 text2->Draw();
 
-        TH1F *hist8 = (TH1F*)file->Get("histProjX_1_Proton_nohFSI");
-        TH1F *hist9 = (TH1F*)file->Get("histProjX_2_Proton_nohFSI");
-        TH1F *hist10 = (TH1F*)file->Get("histProjX_1_PiCh_nohFSI");
-        TH1F *hist11 = (TH1F*)file->Get("histProjX_2_PiCh_nohFSI");
+        TString filename = "hist_outputnohFSI_hadd.root";
+        TString histname1 = "hProton_dPhi1";
+        TString histname2 = "hPiCh_dPhi1";
         
-        std::vector<TH1*> projections = {hist8, hist9};
-        std::vector<TH1*> projections1 = {hist10, hist11};
-        
-        drawGraphs(projections, projections1, colors, markerStyles, rebinFactor);
+        std::vector<TH1D*> projections = getCentPtProjections(filename, histname1, "Proton_nohFSI");
+        std::vector<TH1D*> projections1 = getCentPtProjections(filename, histname2, "PiCh_nohFSI");
+        drawGraphs(projections, projections1, colors, markerStyles);
 
         TString filenames= "p_pi_ratio_transverse_05.root";
         TFile* infile1 = new TFile(filenames, "READ");
@@ -489,7 +551,7 @@ text2->Draw();
         std::vector<TH1*> projections = {hist12, hist13};
         std::vector<TH1*> projections1 = {hist14, hist15};
         
-        drawGraphs(projections, projections1, colors, markerStyles, rebinFactor);
+        drawGraphs1(projections, projections1, colors, markerStyles, rebinFactor);
 
         TString filenames= "p_pi_ratio_transverse_05.root";
         TFile* infile1 = new TFile(filenames, "READ");

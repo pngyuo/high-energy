@@ -124,12 +124,12 @@ void draw() {
         // 绘制K介子Toward区域数据
         kFile->cd("Toward");
         TGraphErrors *kToward0 = (TGraphErrors*)gDirectory->Get("K_Toward_0");
-        TGraphErrors *kToward1 = (TGraphErrors*)gDirectory->Get("K_Toward_1");
+        // TGraphErrors *kToward1 = (TGraphErrors*)gDirectory->Get("K_Toward_1");
         TGraphErrors *kToward2 = (TGraphErrors*)gDirectory->Get("K_Toward_2");
         TGraphErrors *kToward3 = (TGraphErrors*)gDirectory->Get("K_Toward_4");
         
         if (kToward0) kToward0->Draw("LP");
-        if (kToward1) kToward1->Draw("P same");
+        // if (kToward1) kToward1->Draw("P same");
         if (kToward2) kToward2->Draw("LP same");
         if (kToward3) kToward3->Draw("LP same");
         
@@ -154,12 +154,12 @@ void draw() {
         // 绘制K介子Transverse区域数据
         kFile->cd("Transverse");
         TGraphErrors *kTransverse0 = (TGraphErrors*)gDirectory->Get("K_Transverse_0");
-        TGraphErrors *kTransverse1 = (TGraphErrors*)gDirectory->Get("K_Transverse_1");
+        // TGraphErrors *kTransverse1 = (TGraphErrors*)gDirectory->Get("K_Transverse_1");
         TGraphErrors *kTransverse2 = (TGraphErrors*)gDirectory->Get("K_Transverse_2");
         TGraphErrors *kTransverse3 = (TGraphErrors*)gDirectory->Get("K_Transverse_4");
         
         if (kTransverse0) kTransverse0->Draw("LP");
-        if (kTransverse1) kTransverse1->Draw("P same");
+        // if (kTransverse1) kTransverse1->Draw("P same");
         if (kTransverse2) kTransverse2->Draw("LP same");
         if (kTransverse3) kTransverse3->Draw("LP same");
         
@@ -205,12 +205,12 @@ void draw() {
         // 绘制质子Toward区域数据
         protonFile->cd("Toward");
         TGraphErrors *protonToward0 = (TGraphErrors*)gDirectory->Get("Proton_Toward_0");
-        TGraphErrors *protonToward1 = (TGraphErrors*)gDirectory->Get("Proton_Toward_1");
+        // TGraphErrors *protonToward1 = (TGraphErrors*)gDirectory->Get("Proton_Toward_1");
         TGraphErrors *protonToward2 = (TGraphErrors*)gDirectory->Get("Proton_Toward_2");
         TGraphErrors *protonToward3 = (TGraphErrors*)gDirectory->Get("Proton_Toward_4");
         
         if (protonToward0) protonToward0->Draw("LP");
-        if (protonToward1) protonToward1->Draw("P same");
+        // if (protonToward1) protonToward1->Draw("P same");
         if (protonToward2) protonToward2->Draw("LP same");
         if (protonToward3) protonToward3->Draw("LP same");
     }
@@ -229,12 +229,12 @@ void draw() {
         // 绘制质子Transverse区域数据
         protonFile->cd("Transverse");
         TGraphErrors *protonTransverse0 = (TGraphErrors*)gDirectory->Get("Proton_Transverse_0");
-        TGraphErrors *protonTransverse1 = (TGraphErrors*)gDirectory->Get("Proton_Transverse_1");
+        // TGraphErrors *protonTransverse1 = (TGraphErrors*)gDirectory->Get("Proton_Transverse_1");
         TGraphErrors *protonTransverse2 = (TGraphErrors*)gDirectory->Get("Proton_Transverse_2");
         TGraphErrors *protonTransverse3 = (TGraphErrors*)gDirectory->Get("Proton_Transverse_4");
         
         if (protonTransverse0) protonTransverse0->Draw("LP");
-        if (protonTransverse1) protonTransverse1->Draw("P same");
+        // if (protonTransverse1) protonTransverse1->Draw("P same");
         if (protonTransverse2) protonTransverse2->Draw("LP same");
         if (protonTransverse3) protonTransverse3->Draw("LP same");
         
@@ -274,19 +274,19 @@ text2->Draw();
 
     // 添加图例到第一个pad
     c1->cd(1);
-    TLegend *legend = new TLegend(0.2, 0.52, 0.85, 0.82);
+    TLegend *legend = new TLegend(0.2, 0.52, 0.70, 0.82);
     legend->SetNColumns(1);
     legend->SetFillStyle(0);
     legend->SetBorderSize(0);
     legend->SetTextSize(0.08); 
 
-    TGraphErrors *marker1 = new TGraphErrors();
-    marker1->SetMarkerStyle(24);
-    marker1->SetMarkerColor(kBlack);
-    marker1->SetMarkerSize(1);
-    marker1->SetLineWidth(2); 
-    marker1->SetLineColor(kBlack);
-    legend->AddEntry(marker1, "ALICE", "lp");
+    // TGraphErrors *marker1 = new TGraphErrors();
+    // marker1->SetMarkerStyle(24);
+    // marker1->SetMarkerColor(kBlack);
+    // marker1->SetMarkerSize(1);
+    // marker1->SetLineWidth(2); 
+    // marker1->SetLineColor(kBlack);
+    // legend->AddEntry(marker1, "ALICE", "lp");
 
     TGraphErrors *marker2 = new TGraphErrors();
     marker2->SetMarkerStyle(20);
