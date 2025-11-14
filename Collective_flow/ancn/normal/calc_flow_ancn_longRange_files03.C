@@ -179,25 +179,41 @@ void processFile(const char* fileName, const char* fileLabel, TFile* outfile,
     TH3D *hDEtaDPhiTrigEtaSameEventLowMid = (TH3D *)file->Get("hDEtaDPhiTrigEtaSameEventLowMid");
     TH3D *hDEtaDPhiTrigEtaMixEventLowMid = (TH3D *)file->Get("hDEtaDPhiTrigEtaMixEventLowMid");
 
-    int nEtaBins = 30; 
+    // 修复1: 使用常量定义数组大小
+    const int nEtaBins = 30; 
     double etaMin = -3;
     double etaMax = 3;
     double etaValues[nEtaBins];
-    double c2_Eta[30];
-    double c2_Eta_err[30];
-    double a2_Eta_high[30];
-    double a2_Eta_err_high[30];
-    double a2_Eta_low[30];
-    double a2_Eta_err_low[30];
+    double c2_Eta[nEtaBins];
+    double c2_Eta_err[nEtaBins];
+    double a2_Eta_high[nEtaBins];
+    double a2_Eta_err_high[nEtaBins];
+    double a2_Eta_low[nEtaBins];
+    double a2_Eta_err_low[nEtaBins];
     double etaBinHalfWidths[nEtaBins];
-
+    TH1D *hTrigPtHigh_etabin[nEtaBins];
+    TH1D *hTrigPtLow_etabin[nEtaBins];
+    
+    // 修复2: 从当前文件获取hTrigPtEtaHigh和hTrigPtEtaLow
+    TH2D* hTrigPtHighEta = (TH2D*)file->Get("hTrigPtEtaHigh");
+    TH2D* hTrigPtLowEta = (TH2D*)file->Get("hTrigPtEtaLow");
+    
+    if (!hTrigPtHighEta) {
+        std::cout << "Error: hTrigPtEtaHigh not found in file!" << std::endl;
+        return;
+    }
+    if (!hTrigPtLowEta) {
+        std::cout << "Error: hTrigPtEtaLow not found in file!" << std::endl;
+        return;
+    }
+    
     for (int iEta = 0; iEta < nEtaBins; iEta++) {
         double eta = etaMin + (iEta + 0.5) * (etaMax - etaMin) / nEtaBins;
         double binWidth = (etaMax - etaMin) / nEtaBins;
         etaBinHalfWidths[iEta] = binWidth / 2.0;
         etaValues[iEta] = eta;
-        int zBinmin = 2*iEta+1;
-        int zBinmax = 2*iEta+2;
+        int zBinmin = 2*iEta+11;
+        int zBinmax = 2*iEta+12;
         
         std::cout << "Processing eta bin " << iEta << ", eta = " << eta << std::endl;
         double zMin = hDEtaDPhiTrigEtaSameEventHighMid->GetZaxis()->GetBinLowEdge(zBinmin);
@@ -207,25 +223,22 @@ void processFile(const char* fileName, const char* fileLabel, TFile* outfile,
         hDEtaDPhiTrigEtaMixEventHighMid->GetZaxis()->SetRange(zBinmin, zBinmax);
         hDEtaDPhiTrigEtaSameEventLowMid->GetZaxis()->SetRange(zBinmin, zBinmax);
         hDEtaDPhiTrigEtaMixEventLowMid->GetZaxis()->SetRange(zBinmin, zBinmax);
-
+        hTrigPtHighEta->GetYaxis()->SetRange(zBinmin, zBinmax);
+        hTrigPtLowEta->GetYaxis()->SetRange(zBinmin, zBinmax);
         TH2D *hsame_eta_high = (TH2D*)hDEtaDPhiTrigEtaSameEventHighMid->Project3D("yx");
         TH2D *hmix_eta_high = (TH2D*)hDEtaDPhiTrigEtaMixEventHighMid->Project3D("yx");
         TH2D *hsame_eta_low = (TH2D*)hDEtaDPhiTrigEtaSameEventLowMid->Project3D("yx");
         TH2D *hmix_eta_low = (TH2D*)hDEtaDPhiTrigEtaMixEventLowMid->Project3D("yx");
-
-        TH2D *hTrigPtEtaLow = (TH2D *)file->Get("hTrigPtEtaLow");
-        TH2D *hTrigPtEtaHigh = (TH2D *)file->Get("hTrigPtEtaHigh");
-        int bin_eta = hTrigPtEtaHigh->GetYaxis()->FindBin(eta);
-        double Ntrig_high_bin = hTrigPtEtaHigh->Integral(5, hTrigPtEtaHigh->GetXaxis()->GetNbins(), bin_eta, bin_eta);
-        double Ntrig_low_bin = hTrigPtEtaLow->Integral(5, hTrigPtEtaLow->GetXaxis()->GetNbins(), bin_eta, bin_eta);
+        hTrigPtLow_etabin[iEta] = hTrigPtLowEta->ProjectionX(Form("hTrigPtLow_etabin%d",iEta), zBinmin, zBinmax);
+        hTrigPtHigh_etabin[iEta] = hTrigPtHighEta->ProjectionX(Form("hTrigPtHigh_etabin%d",iEta), zBinmin, zBinmax);
 
         if (hsame_eta_high->GetEntries() > 0 && hmix_eta_high->GetEntries() > 0) {
             // 清理之前的直方图
             if (hYHigh) delete hYHigh;
             if (hYLow) delete hYLow;
             
-            hYHigh = getYFromHist(hsame_eta_high, hmix_eta_high, Form("YHigh_eta%d_%s", iEta, fileLabel), 10);
-            hYLow = getYFromHist(hsame_eta_low, hmix_eta_low, Form("YLow_eta%d_%s", iEta, fileLabel), 10);
+            hYHigh = getYFromHist(hsame_eta_high, hmix_eta_high, Form("YHigh_eta%d_%s", iEta, fileLabel), hTrigPtHigh_etabin[iEta]->Integral());
+            hYLow = getYFromHist(hsame_eta_low, hmix_eta_low, Form("YLow_eta%d_%s", iEta, fileLabel), hTrigPtLow_etabin[iEta]->Integral());
             
             // 使用临时变量接收getAn的返回值
             double a2higherr_temp = 0, a2lowerr_temp = 0;
@@ -257,7 +270,7 @@ void processFile(const char* fileName, const char* fileLabel, TFile* outfile,
             c2_Eta_err[iEta] = c2_err;
         }
 
-                // 保存每个eta bin的直方图到输出文件
+        // 保存每个eta bin的直方图到输出文件
         if (hYHigh) {
             outfile->cd();
             hYHigh->Write(Form("hYHigh_eta%d_%s", iEta, fileLabel));
@@ -300,14 +313,14 @@ void processFile(const char* fileName, const char* fileLabel, TFile* outfile,
 void calc_flow_ancn_longRange_files03() {
     // 文件列表
     const char* fileNames[4] = {
-        "hist_ampt_normal_1.5mb_Decorr_yuhao.root",
-        "hist_ampt_normal_0.15mb_Decorr_yuhao.root", 
-        "hist_ampt_normal_1.5mb_a_0.8_b_0.4_Decorr_yuhao.root",
+        // "hist_ampt_normal_1.5mb_Decorr_yuhao.root",
+        // "hist_ampt_normal_0.15mb_Decorr_yuhao.root", 
+        // "hist_ampt_normal_1.5mb_a_0.8_b_0.4_Decorr_yuhao.root",
         "hist_ampt_normal_0.15mb_a_0.8_b_0.4_Decorr_yuhao.root"
     };
     
-    const char* fileLabels[4] = {"normal_1.5mb", "normal_0.15mb", "normal_1.5mb_a08_b04","normal_0.15mb_a08_b04"};
-    const char* legendLabels[4] = {"normal 1.5mb", "normal 0.15mb", "normal 1.5mb a=0.8 b=0.4", "normal 0.15mb a=0.8 b=0.4"};
+    const char* fileLabels[4] = {"normal_0.15mb_a08_b04", "normal_1.5mb", "normal_0.15mb", "normal_1.5mb_a08_b04"};
+    const char* legendLabels[4] = {"normal_0.15mb_a08_b04","normal 1.5mb", "normal 0.15mb", "normal 1.5mb a=0.8 b=0.4"};
     
     // 创建输出文件
     TFile *outfile = new TFile("longRange_flow_multifile.root", "RECREATE");
@@ -318,7 +331,7 @@ void calc_flow_ancn_longRange_files03() {
     TGraphErrors *gr_a2_low[4];
     
     // 处理三个文件
-    for (int iFile = 0; iFile < 4; iFile++) {
+    for (int iFile = 0; iFile < 1; iFile++) {
         processFile(fileNames[iFile], fileLabels[iFile], outfile, 
                    &gr_c2[iFile], &gr_a2_high[iFile], &gr_a2_low[iFile]);
     }
@@ -337,7 +350,7 @@ void calc_flow_ancn_longRange_files03() {
     // gPad->SetBottomMargin(0.15);
     
      bool firstDraw = true;
-    // for (int iFile = 0; iFile < 4; iFile++) {
+    // for (int iFile = 0; iFile < 1; iFile++) {
     //     if (gr_c2[iFile]) {
     //         gr_c2[iFile]->SetTitle("c_{2} vs #eta");
     //         gr_c2[iFile]->GetXaxis()->SetTitle("#eta");
@@ -359,7 +372,7 @@ void calc_flow_ancn_longRange_files03() {
     // }
     
     // TLegend *leg1 = new TLegend(0.2, 0.7, 0.8, 0.9);
-    // for (int iFile = 0; iFile < 4; iFile++) {
+    // for (int iFile = 0; iFile < 1; iFile++) {
     //     if (gr_c2[iFile]) {
     //         leg1->AddEntry(gr_c2[iFile], legendLabels[iFile], "p");
     //     }
@@ -374,7 +387,7 @@ void calc_flow_ancn_longRange_files03() {
     // gPad->SetBottomMargin(0.15);
     
     // firstDraw = true;
-    // for (int iFile = 0; iFile < 4; iFile++) {
+    // for (int iFile = 0; iFile < 1; iFile++) {
     //     if (gr_a2_high[iFile]) {
     //         gr_a2_high[iFile]->SetTitle("a_{2}^{high} vs #eta");
     //         gr_a2_high[iFile]->GetXaxis()->SetTitle("#eta");
@@ -395,7 +408,7 @@ void calc_flow_ancn_longRange_files03() {
     // }
     
     // TLegend *leg2 = new TLegend(0.2, 0.7, 0.8, 0.9);
-    // for (int iFile = 0; iFile < 4; iFile++) {
+    // for (int iFile = 0; iFile < 1; iFile++) {
     //     if (gr_a2_high[iFile]) {
     //         leg2->AddEntry(gr_a2_high[iFile], legendLabels[iFile], "p");
     //     }
@@ -410,7 +423,7 @@ void calc_flow_ancn_longRange_files03() {
     // gPad->SetBottomMargin(0.15);
     
     // firstDraw = true;
-    // for (int iFile = 0; iFile < 4; iFile++) {
+    // for (int iFile = 0; iFile < 1; iFile++) {
     //     if (gr_a2_low[iFile]) {
     //         gr_a2_low[iFile]->SetTitle("a_{2}^{low} vs #eta");
     //         gr_a2_low[iFile]->GetXaxis()->SetTitle("#eta");
@@ -431,7 +444,7 @@ void calc_flow_ancn_longRange_files03() {
     // }
     
     // TLegend *leg3 = new TLegend(0.2, 0.7, 0.8, 0.9);
-    // for (int iFile = 0; iFile < 4; iFile++) {
+    // for (int iFile = 0; iFile < 1; iFile++) {
     //     if (gr_a2_low[iFile]) {
     //         leg3->AddEntry(gr_a2_low[iFile], legendLabels[iFile], "p");
     //     }
@@ -453,7 +466,7 @@ void calc_flow_ancn_longRange_files03() {
     // double yMin = 1e10, yMax = -1e10;
     
     // // 先找到y轴范围
-    // for (int iFile = 0; iFile < 4; iFile++) {
+    // for (int iFile = 0; iFile < 1; iFile++) {
     //     if (gr_c2[iFile]) {
     //         for (int i = 0; i < gr_c2[iFile]->GetN(); i++) {
     //             double x, y;
@@ -481,7 +494,7 @@ void calc_flow_ancn_longRange_files03() {
     // }
     
     // // 画c2
-    // for (int iFile = 0; iFile < 4; iFile++) {
+    // for (int iFile = 0; iFile < 1; iFile++) {
     //     if (gr_c2[iFile]) {
     //         gr_c2[iFile]->SetTitle("Flow Coefficients vs #eta");
     //         gr_c2[iFile]->GetXaxis()->SetTitle("#eta");
@@ -505,7 +518,7 @@ void calc_flow_ancn_longRange_files03() {
     // }
     
     // // 画a2_high
-    // for (int iFile = 0; iFile < 4; iFile++) {
+    // for (int iFile = 0; iFile < 1; iFile++) {
     //     if (gr_a2_high[iFile]) {
     //         // 使用更深的颜色变体
     //         int darkColors[3] = {kRed+2, kBlue+2, kGreen+4};
@@ -521,7 +534,7 @@ void calc_flow_ancn_longRange_files03() {
     // }
     
     // // 画a2_low
-    // for (int iFile = 0; iFile < 4; iFile++) {
+    // for (int iFile = 0; iFile < 1; iFile++) {
     //     if (gr_a2_low[iFile]) {
     //         // 使用更浅的颜色变体
     //         int lightColors[3] = {kRed-7, kBlue-7, kGreen-7};
@@ -540,19 +553,19 @@ void calc_flow_ancn_longRange_files03() {
     // TLegend *leg4 = new TLegend(0.15, 0.75, 0.85, 0.95);
     // leg4->SetNColumns(3); // 3列显示
     
-    // for (int iFile = 0; iFile < 4; iFile++) {
+    // for (int iFile = 0; iFile < 1; iFile++) {
     //     if (gr_c2[iFile]) {
     //         leg4->AddEntry(gr_c2[iFile], Form("c_{2} %s", legendLabels[iFile]), "p");
     //     }
     // }
-    // for (int iFile = 0; iFile < 4; iFile++) {
+    // for (int iFile = 0; iFile < 1; iFile++) {
     //     if (gr_a2_high[iFile]) {
     //         int darkColors[3] = {kRed+2, kBlue+2, kGreen+4};
     //         gr_a2_high[iFile]->SetLineColor(darkColors[iFile]); // 确保图例颜色正确
     //         leg4->AddEntry(gr_a2_high[iFile], Form("a_{2}^{high} %s", legendLabels[iFile]), "p");
     //     }
     // }
-    // for (int iFile = 0; iFile < 4; iFile++) {
+    // for (int iFile = 0; iFile < 1; iFile++) {
     //     if (gr_a2_low[iFile]) {
     //         int lightColors[3] = {kRed-7, kBlue-7, kGreen-7};
     //         gr_a2_low[iFile]->SetLineColor(lightColors[iFile]); // 确保图例颜色正确
@@ -575,7 +588,7 @@ gPad->SetLeftMargin(0.15);
 gPad->SetBottomMargin(0.15);
 
 firstDraw = true;
-for (int iFile = 0; iFile < 4; iFile++) {
+for (int iFile = 0; iFile < 1; iFile++) {
     if (gr_c2[iFile]) {
         gr_c2[iFile]->SetTitle("c_{2} vs #eta");
         gr_c2[iFile]->GetXaxis()->SetTitle("#eta");
@@ -598,7 +611,7 @@ for (int iFile = 0; iFile < 4; iFile++) {
 }
 
 TLegend *leg1_copy = new TLegend(0.2, 0.7, 0.8, 0.9);
-for (int iFile = 0; iFile < 4; iFile++) {
+for (int iFile = 0; iFile < 1; iFile++) {
     if (gr_c2[iFile]) {
         leg1_copy->AddEntry(gr_c2[iFile], legendLabels[iFile], "p");
     }
@@ -615,13 +628,13 @@ gPad->SetLeftMargin(0.15);
 gPad->SetBottomMargin(0.15);
 
 firstDraw = true;
-for (int iFile = 0; iFile < 4; iFile++) {
+for (int iFile = 0; iFile < 1; iFile++) {
     if (gr_a2_high[iFile]) {
         gr_a2_high[iFile]->SetTitle("a_{2}^{high} vs #eta");
         gr_a2_high[iFile]->GetXaxis()->SetTitle("#eta");
         gr_a2_high[iFile]->GetYaxis()->SetTitle("a_{2}^{high}");
         gr_a2_high[iFile]->GetXaxis()->SetRangeUser(-3, 3);
-        gr_a2_high[iFile]->GetYaxis()->SetRangeUser(0.0015, 0.012);
+        gr_a2_high[iFile]->GetYaxis()->SetRangeUser(0.0040, 0.0055);
         
         // 添加颜色和标记样式设置
         gr_a2_high[iFile]->SetMarkerStyle(markerStyles[iFile]);
@@ -638,7 +651,7 @@ for (int iFile = 0; iFile < 4; iFile++) {
 }
 
 TLegend *leg2_copy = new TLegend(0.2, 0.7, 0.8, 0.9);
-for (int iFile = 0; iFile < 4; iFile++) {
+for (int iFile = 0; iFile < 1; iFile++) {
     if (gr_a2_high[iFile]) {
         leg2_copy->AddEntry(gr_a2_high[iFile], legendLabels[iFile], "p");
     }
@@ -655,7 +668,7 @@ gPad->SetLeftMargin(0.15);
 gPad->SetBottomMargin(0.15);
 
 firstDraw = true;
-for (int iFile = 0; iFile < 4; iFile++) {
+for (int iFile = 0; iFile < 1; iFile++) {
     if (gr_a2_low[iFile]) {
         gr_a2_low[iFile]->SetTitle("a_{2}^{low} vs #eta");
         gr_a2_low[iFile]->GetXaxis()->SetTitle("#eta");
@@ -678,7 +691,7 @@ for (int iFile = 0; iFile < 4; iFile++) {
 }
 
 TLegend *leg3_copy = new TLegend(0.2, 0.7, 0.8, 0.9);
-for (int iFile = 0; iFile < 4; iFile++) {
+for (int iFile = 0; iFile < 1; iFile++) {
     if (gr_a2_low[iFile]) {
         leg3_copy->AddEntry(gr_a2_low[iFile], legendLabels[iFile], "p");
     }
@@ -702,7 +715,7 @@ c3_individual->SaveAs("subplot3_a2_low_vs_eta03.png");
     double yMin_copy = 1e10, yMax_copy = -1e10;
     
     // 先找到y轴范围
-    for (int iFile = 0; iFile < 4; iFile++) {
+    for (int iFile = 0; iFile < 1; iFile++) {
         if (gr_c2[iFile]) {
             for (int i = 0; i < gr_c2[iFile]->GetN(); i++) {
                 double x, y;
@@ -730,7 +743,7 @@ c3_individual->SaveAs("subplot3_a2_low_vs_eta03.png");
     }
     
     // 画c2
-    for (int iFile = 0; iFile < 4; iFile++) {
+    for (int iFile = 0; iFile < 1; iFile++) {
         if (gr_c2[iFile]) {
             gr_c2[iFile]->SetTitle("Flow Coefficients vs #eta");
             gr_c2[iFile]->GetXaxis()->SetTitle("#eta");
@@ -755,7 +768,7 @@ c3_individual->SaveAs("subplot3_a2_low_vs_eta03.png");
     }
     
     // 画a2_high
-    for (int iFile = 0; iFile < 4; iFile++) {
+    for (int iFile = 0; iFile < 1; iFile++) {
         if (gr_a2_high[iFile]) {
             // 使用更深的颜色变体
             int darkColors_copy[3] = {kRed+2, kBlue+2, kGreen+4};
@@ -771,7 +784,7 @@ c3_individual->SaveAs("subplot3_a2_low_vs_eta03.png");
     }
     
     // 画a2_low
-    for (int iFile = 0; iFile < 4; iFile++) {
+    for (int iFile = 0; iFile < 1; iFile++) {
         if (gr_a2_low[iFile]) {
             // 使用更浅的颜色变体
             int lightColors_copy[3] = {kRed-7, kBlue-7, kGreen-7};
@@ -790,19 +803,19 @@ c3_individual->SaveAs("subplot3_a2_low_vs_eta03.png");
     TLegend *leg4_copy = new TLegend(0.15, 0.75, 0.85, 0.95);
     leg4_copy->SetNColumns(3); // 3列显示
     
-    for (int iFile = 0; iFile < 4; iFile++) {
+    for (int iFile = 0; iFile < 1; iFile++) {
         if (gr_c2[iFile]) {
             leg4_copy->AddEntry(gr_c2[iFile], Form("c_{2} %s", legendLabels[iFile]), "p");
         }
     }
-    for (int iFile = 0; iFile < 4; iFile++) {
+    for (int iFile = 0; iFile < 1; iFile++) {
         if (gr_a2_high[iFile]) {
             int darkColors_copy[3] = {kRed+2, kBlue+2, kGreen+4};
             gr_a2_high[iFile]->SetLineColor(darkColors_copy[iFile]); // 确保图例颜色正确
             leg4_copy->AddEntry(gr_a2_high[iFile], Form("a_{2}^{high} %s", legendLabels[iFile]), "p");
         }
     }
-    for (int iFile = 0; iFile < 4; iFile++) {
+    for (int iFile = 0; iFile < 1; iFile++) {
         if (gr_a2_low[iFile]) {
             int lightColors_copy[3] = {kRed-7, kBlue-7, kGreen-7};
             gr_a2_low[iFile]->SetLineColor(lightColors_copy[iFile]); // 确保图例颜色正确
@@ -823,7 +836,7 @@ c3_individual->SaveAs("subplot3_a2_low_vs_eta03.png");
     gPad->SetBottomMargin(0.15);
     
     firstDraw = true;
-    for (int iFile = 0; iFile < 4; iFile++) {
+    for (int iFile = 0; iFile < 1; iFile++) {
         if (gr_c2[iFile]) {
             gr_c2[iFile]->SetTitle("Long-range flow coefficient c_{2} vs #eta");
             gr_c2[iFile]->GetXaxis()->SetTitle("#eta");
@@ -841,7 +854,7 @@ c3_individual->SaveAs("subplot3_a2_low_vs_eta03.png");
     }
     
     TLegend *leg_c2_only = new TLegend(0.2, 0.7, 0.8, 0.9);
-    for (int iFile = 0; iFile < 4; iFile++) {
+    for (int iFile = 0; iFile < 1; iFile++) {
         if (gr_c2[iFile]) {
             leg_c2_only->AddEntry(gr_c2[iFile], legendLabels[iFile], "p");
         }

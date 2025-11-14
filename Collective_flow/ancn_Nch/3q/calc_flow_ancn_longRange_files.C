@@ -215,13 +215,13 @@ void calc_flow_ancn_longRange_files(){
   
   // Define the three files and their properties
   TString filenames[4] = {
-    "hist_outputallFSI_Nch.root",
+    "hist_ampt_3q_0.15mb_Decorr_yuhao.root",
     "hist_ampt_normal_0.15mb_longRange_yuhao.root", 
     "hist_ampt_normal_1.5mb_a_0.8_b_0.4_longRange_yuhao.root",
     "hist_ampt_normal_0.15mb_a_0.8_b_0.4_longRange_yuhao.root"
   };
   
-  TString labels[4] = {"normal_1.5mb", "normal_0.15mb", "normal_1.5mb_a0.8_b0.4","normal_0.15mb_a0.8_b0.4"};
+  TString labels[4] = {"3q_0.15mb","normal_1.5mb",  "normal_1.5mb_a0.8_b0.4","normal_0.15mb_a0.8_b0.4"};
   int colors[4] = {kBlack,kRed, kBlue, kGreen};
   int markers[4] = {20, 21, 22,23};
   
@@ -256,7 +256,7 @@ void calc_flow_ancn_longRange_files(){
   TH2D *hframe_Nch = new TH2D("hframe_Nch", ";N_{ch};a_{n}", 100, 0, 80, 100, 0, 0.0072);
   hframe_Nch->Draw();
   
-  TLegend *leg_Nch = new TLegend(0.15, 0.2, 0.4, 0.5);
+  TLegend *leg_Nch = new TLegend(0.15, 0.2, 0.4, 0.4);
   leg_Nch->SetTextSize(0.030);
   leg_Nch->SetBorderSize(0);
   for(int ifile = 0; ifile < 1; ifile++) {
